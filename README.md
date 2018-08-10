@@ -9,4 +9,5 @@
 4. **popo** cleanMid3 -> MidOutput, MP3
 * [[GUI]]
 1. **popo** play, midi record API
+  * https://blog.csdn.net/jdh99/article/details/6226435
 2. **Lin** GUI
