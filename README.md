@@ -11,3 +11,15 @@
 1. **popo** play, midi record API
   * https://github.com/narcode/MIDI_recorder
 2. **Lin** GUI
+
+### [16.Aug.2018]
+* integration
+
+### [17.Aug.2018]
+* DEMO PROF.
+
+### [20.Aug.2018]
+* 計劃書
+
+### [25.Aug.2018]
+* 海報
