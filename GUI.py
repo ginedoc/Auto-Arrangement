@@ -14,6 +14,7 @@ from mido import Message
 import SourceCode.drumSample as drumSample
 import SourceCode.drumGenerate as drumGenerate
 import SourceCode.cleanMidi as cleanMidi
+import SourceCode.midiscore as midiscore
 
 
 class App(QWidget):
@@ -222,9 +223,13 @@ class App(QWidget):
 				# 整理midi樂譜
 				sectionNum = cleanMidi.cleanMIDI(self.filePath)
 				# 其他伴奏加入
-				
+				popoSong = midiscore.song(self.filePath)              		
+				popoChord = popoSong.chord_estimation('model/model2_05.h5')
+				popoSong.add_accompaniant(popoChord, 35)    # bass
+				popoSong.add_accompaniant(popoChord, 4)     # piano
 				# 輸出鼓組
-				drumGenerate.OutputMidi("clenaMidi.mid", drumlist, sectionNum)
+				##drumGenerate.OutputMidi("clenaMidi.mid", drumlist, sectionNum)
+				drumGenerate.OutputMidi("SourceFile/mymidi.mid", drumlist, sectionNum)
 				
 				self.completeMsgBox()
 				self.reset_click()
