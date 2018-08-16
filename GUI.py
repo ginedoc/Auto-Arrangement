@@ -1,23 +1,26 @@
-import os.path
 import re
 import sys
+import os.path
 from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout
-from PyQt5.QtWidgets import QPushButton, QRadioButton, QCheckBox, QLineEdit, QFileDialog, QLabel, QMessageBox
+from PyQt5.QtWidgets import QPushButton, QRadioButton, QCheckBox, QLineEdit, QFileDialog, QLabel, QMessageBox, QComboBox
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import pyqtSlot, QSize
 
-import SourceCode.globalVar as gl
-import MidiFile_DataSet 
-import MidiFile_ExpendtoPianoRoll 
-import MidiFile_ExporttheResult
+import time
+import rtmidi
+import threading
+from mido import Message
+
+import SourceCode.drumSample as drumSample
+import SourceCode.drumGenerate as drumGenerate
+import SourceCode.cleanMidi as cleanMidi
 
 
 class App(QWidget):
 	
-	hi_het = [1,0,1,0,1,0,1,0, 1,0,1,0,1,0,1,0]
-	s_drum = [0,0,0,0,1,0,0,0, 0,1,0,0,1,0,0,0]
-	b_drum = [0,0,0,0,1,0,0,0, 0,0,0,0,1,0,0,0]
+	filePath = ''
 	
+	hi_het = [0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0]; s_drum = [0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0]; b_drum = [0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0]
 	hi_het_list_btn = []; s_drum_list_btn = []; b_drum_list_btn = []
 	
 
@@ -26,24 +29,36 @@ class App(QWidget):
 		self.initUI()
 
 	def fileOpen_GUI(self,layout):
-		grid = QGridLayout()
-		grid.setSpacing(10)
+		grid = QGridLayout();	grid.setSpacing(10)
+		grid.addWidget(QLabel("請選擇一個MIDI檔案：",self),0,0,1,8)
+		
 		# file path textbox
 		self.filePath_textbox = QLineEdit(self)
-		grid.addWidget(self.filePath_textbox, 0, 0, 1, 8)
+		grid.addWidget(self.filePath_textbox, 1, 0, 1, 8)
 		# open button
 		open_button = QPushButton('Open File', self)
-		grid.addWidget(open_button, 0, 8, 1, 2)
+		grid.addWidget(open_button, 1, 9, 1, 1)
 		open_button.clicked.connect(self.open_click)
+		
+		# listen button
+		listen_button = QPushButton('試聽', self)
+		grid.addWidget(listen_button, 1, 10, 1, 1)
+		listen_button.clicked.connect(self.listen_click)
+		# record button
+		record_button = QPushButton('錄製', self)
+		grid.addWidget(record_button, 1, 11, 1, 1)
+		record_button.clicked.connect(self.record_click)
 		
 		layout.addLayout(grid)
 		
+	
 	def excute_GUI(self,layout):
 		grid = QGridLayout()
 		# listen button
 		listen_button = QPushButton('鼓組試聽', self)
 		grid.addWidget(listen_button,0,5,1,1)
-			#reset_button.clicked.connect(self.reset_click)
+		listen_button.clicked.connect(self.drumLis_click)
+		
 		# reset button 
 		reset_button = QPushButton('Reset', self)
 		grid.addWidget(reset_button,1,0,1,2)
@@ -57,135 +72,159 @@ class App(QWidget):
 		grid.addWidget(exit_button,1,4,1,2)
 		exit_button.clicked.connect(self.exit_click)	
 		
-		
-		
 		layout.addLayout(grid)
-	
-	def accompanyType_GUI(self,layout):
-		grid = QGridLayout()
-		grid.setSpacing(10)
-		# accompany type ration button 
-		self.acc_0 = QRadioButton("1",self);		grid.addWidget(self.acc_0,2,0,1,1)
-		self.acc_0.toggled.connect(lambda:self.typeSet(self.acc_0))
-		self.acc_1 = QRadioButton("2",self);		grid.addWidget(self.acc_1,4,0,1,1)
-		self.acc_1.toggled.connect(lambda:self.typeSet(self.acc_1))
-		self.acc_0.setChecked(True)
-		gl.set_disassembleType(0)
-		# accompany type pic 
-		accompany_0 = QPushButton('', self);	accompany_0.setEnabled(False)
-		accompany_0.setFixedSize(400,100);		grid.addWidget(accompany_0,1,1,2,3)
-		accompany_0.setIcon(QIcon("SourceFile/1.jpg"));	accompany_0.setIconSize(QSize(400,100))
-		accompany_1 = QPushButton('', self);	accompany_1.setEnabled(False)
-		accompany_1.setFixedSize(400,100);		grid.addWidget(accompany_1,3,1,2,3)
-		accompany_1.setIcon(QIcon("SourceFile/2.jpg"));	accompany_1.setIconSize(QSize(400,100))
-		
-		
-		layout.addLayout(grid)
-		
 	
 	
 	def drumBtn_GUI(self,layout):
+	
 		a = 25; cnt = 0
 		grid = QGridLayout(); grid.setVerticalSpacing(11)
-		pic = QPixmap("SourceFile/drum.jpg").scaled(QSize(450,100))
-		bgPic = QLabel("123",self);  bgPic.setPixmap(pic)
-		grid.addWidget(bgPic,0,0,10,50)
+		grid.addWidget(QLabel("請選擇鼓組(以16分音符為一單位)："),0,0,1,50)
 		
+		self.select_button = QComboBox(self)
+		grid.addWidget(self.select_button, 1, 0, 1 ,50)
+		self.select_button.addItem("Empty")
+		self.select_button.addItem("Basic 1")
+		self.select_button.addItem("Basic 2")
+		self.select_button.currentIndexChanged.connect(lambda:self.select_click(self.select_button))
+		
+		
+		pic = QPixmap("SourceFile/drum.jpg").scaled(QSize(450,100))
+		bgPic = QLabel("123",self);  bgPic.setPixmap(pic)	
+		grid.addWidget(bgPic,2,0,10,50)
 		for i in range(0,16):
 			if i%4==0:
 				cnt+=1
-			self.hi_het_list_btn.append(QCheckBox("",self));  grid.addWidget(self.hi_het_list_btn[i],0,a+i+cnt,1,1)
-			self.s_drum_list_btn.append(QCheckBox("",self));  grid.addWidget(self.s_drum_list_btn[i],2,a+i+cnt,1,1)
-			self.b_drum_list_btn.append(QCheckBox("",self));  grid.addWidget(self.b_drum_list_btn[i],4,a+i+cnt,1,1)
-			self.hi_het_list_btn[i].setTristate(True); self.hi_het_list_btn[i].setCheckState(gl.get_hiHet(i))
-			self.s_drum_list_btn[i].setTristate(True); self.s_drum_list_btn[i].setCheckState(gl.get_sDrum(i))
-			self.b_drum_list_btn[i].setTristate(True); self.b_drum_list_btn[i].setCheckState(gl.get_bDrum(i))
-			
-			# self.b_drum_list_btn[i].clicked.connect(lambda:self.typeSet(self.b_drum_list_btn[i]))
-			
+			self.hi_het_list_btn.append(QCheckBox("",self));  grid.addWidget(self.hi_het_list_btn[i],2,a+i+cnt,1,1)
+			self.s_drum_list_btn.append(QCheckBox("",self));  grid.addWidget(self.s_drum_list_btn[i],4,a+i+cnt,1,1)
+			self.b_drum_list_btn.append(QCheckBox("",self));  grid.addWidget(self.b_drum_list_btn[i],6,a+i+cnt,1,1)
+			self.hi_het_list_btn[i].setTristate(True);	self.s_drum_list_btn[i].setTristate(True);	self.b_drum_list_btn[i].setTristate(True); 
+		
+		self.connectCheckBox()
+		
+		
 		layout.addLayout(grid)
 	
 	def initUI(self):
 		self.setWindowTitle('自動伴奏產生器')
 
 		grid = QVBoxLayout(); #grid.setSpacing(10)
-		grid.addWidget(QLabel("請選擇一個MIDI檔案：",self))
-		self.fileOpen_GUI(grid)
-		grid.addWidget(QLabel("請選擇和弦拆解方式：",self))
-		self.accompanyType_GUI(grid)
-		grid.addWidget(QLabel("請輸入鼓組(以16分音符為一單位)：",self))
+		self.fileOpen_GUI(grid)		
 		self.drumBtn_GUI(grid)
 		self.excute_GUI(grid)
-
-		
-		
 		self.setLayout(grid)
+		
 		self.show()
 		
 		
 	def MidiFile_DataSet_show(self):
-				
-		print("main Key : ", gl.get_mainKey())
-		print("ticks_per_beat : ",gl.get_ticks_per_beat()) # resolution
-		print("midi length : ", gl.get_midi_length())
-		print("Type : ",gl.get_disassembleType())
-				
-	
+		print("main Key : ", self.filePath)
+		print("ticks_per_beat : ",self.ticks_per_beat) # resolution
+		print("mainkey : ",self.mainKey)
 		
 	@pyqtSlot()
 	
 	def reset_click(self):
 		for i in range(0,16):
-			self.hi_het_list_btn[i].setCheckState(gl.get_hiHet(i))
-			self.s_drum_list_btn[i].setCheckState(gl.get_sDrum(i))
-			self.b_drum_list_btn[i].setCheckState(gl.get_bDrum(i))
-		self.acc_0.setChecked(True)
-		gl.set_pathName(""); self.filePath_textbox.setText(gl.get_pathName())
+			self.hi_het_list_btn[i].setCheckState(0)
+			self.s_drum_list_btn[i].setCheckState(0)
+			self.b_drum_list_btn[i].setCheckState(0)
+		self.select_button.setCurrentIndex(0)
+		self.filePath = '';  self.filePath_textbox.setText(self.filePath)
+		
 	
 	def open_click(self):
 		self.openFileNameDialog()
-		self.filePath_textbox.setText(gl.get_pathName())
+		self.filePath_textbox.setText(self.filePath)
 	def openFileNameDialog(self): 
 		options = QFileDialog.Options()
 		options |= QFileDialog.DontUseNativeDialog
 		fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*);;Python Files (*.py)", options=options)
 		if fileName:
-			gl.set_pathName(fileName)
-			# print(gl.get_pathName())	
+			self.filePath = fileName # print(fileName)	
 
-	def run_click(self):
-		if gl.get_pathName() == "":
-			gl.set_pathName( self.filePath_textbox.text() )
+	def listen_click(self):
+		print("listen click")
+	def record_click(self):		
+		print("record click")
+	
+	def select_click(self,box):
+		#print(box.currentIndex())
+		tmp = drumSample.get_drumList(box.currentIndex())
+		for i in range(0,16):
+			self.hi_het_list_btn[i].setCheckState(tmp[0][i]) 
+			self.b_drum_list_btn[i].setCheckState(tmp[1][i]) 
+			self.s_drum_list_btn[i].setCheckState(tmp[2][i]) 
+			
+	def typeSet_btn(self,b):	
+		if b.checkState() == 2:
+			b.setCheckState(0)
+		
+	def DrumOutputSample(self):
+		hi_note = 42;	s_drum_note = 38;	b_drum_note = 36
+		time_delta = 0.15; cnt = 0;
+		
+		midiout = rtmidi.MidiOut()
+		available_ports = midiout.get_ports()
+		
+		for i in range(0,16):
+			self.hi_het[i] = self.hi_het_list_btn[i].checkState()
+			self.b_drum[i] = self.b_drum_list_btn[i].checkState()
+			self.s_drum[i] = self.s_drum_list_btn[i].checkState()			
+		durm_list = []; durm_list.append(self.hi_het); durm_list.append(self.s_drum);  durm_list.append(self.b_drum);
+
+		if available_ports:
+			midiout.open_port(0)
 		else:
-			self.filePath_textbox.setText(gl.get_pathName())
-		print(gl.get_pathName())
+			midiout.open_virtual_port("My virtual output")
+
+		for i in range(0,2):  # repeat leng times
+			for i in range(0,len(durm_list[0])):	# one section tempo
+				if(durm_list[0][i] or durm_list[1][i] or durm_list[2][i]):	
+					time.sleep(cnt*time_delta)
+					midiout.send_message( Message('note_on', note=hi_note, velocity=durm_list[0][i]*96, channel = 9).bytes() )
+					midiout.send_message( Message('note_on', note=s_drum_note, velocity=durm_list[1][i]*70, channel = 9).bytes() )
+					midiout.send_message( Message('note_on', note=b_drum_note, velocity=durm_list[2][i]*96, channel = 9).bytes() )
+					time.sleep(time_delta)
+					midiout.send_message( Message('note_on', note=hi_note, velocity=0, channel = 9).bytes() )
+					midiout.send_message( Message('note_on', note=s_drum_note, velocity=0, channel = 9).bytes() )
+					midiout.send_message( Message('note_on', note=b_drum_note, velocity=0, channel = 9).bytes() )
+					cnt = 0
+				else:
+					cnt+=1
+		time.sleep(time_delta)
+		del midiout
+
+		
+	def drumLis_click(self):
+		print("drum listen")
+		t = threading.Thread(target = self.DrumOutputSample)
+		t.start()
+			
+	def run_click(self):
+		if self.filePath == "":
+			self.filePath =  self.filePath_textbox.text() 
+		else:
+			self.filePath_textbox.setText(self.filePath)
+		print(self.filePath)
 		
 		regular = r'([A-z]*)(.mid)' ;	p = re.compile(regular)
-		if p.search(gl.get_pathName()) != None:
-			if os.path.isfile( gl.get_pathName() ):
-				print("reslolution is 8")
-				gl.set_resolution(8)		
-				
-				print("\nIn MidiFile_DataSet : ");	
-				MidiFile_DataSet.initMIDIdata()		
-				self.MidiFile_DataSet_show()
+		if p.search(self.filePath) != None:
+			if os.path.isfile( self.filePath ):
 				
 				for i in range(0,16):
 					self.hi_het[i] = self.hi_het_list_btn[i].checkState()
 					self.b_drum[i] = self.b_drum_list_btn[i].checkState()
 					self.s_drum[i] = self.s_drum_list_btn[i].checkState()
-				for i in range(0,16):
-					print(self.hi_het[i],self.b_drum[i],self.s_drum[i])
 					
-				
-				print("\nIn MidiFile_ExpendtoPianoRoll : ")
-				MidiFile_ExpendtoPianoRoll.Generate_input_data()
-				
-				print("\nIn MidiFile_ExporttheResult : ")
-				chordlist = ['C','G','C','C','G','G','C','C','C','C','C','C','G','G','C','C']
-				drumlist = []
+				drumlist = []; 
 				drumlist.append(self.hi_het); drumlist.append(self.s_drum);  drumlist.append(self.b_drum);
-				MidiFile_ExporttheResult.OutputMidi(chordlist,drumlist)
+				# 整理midi樂譜
+				sectionNum = cleanMidi.cleanMIDI(self.filePath)
+				# 其他伴奏加入
+				
+				# 輸出鼓組
+				drumGenerate.OutputMidi("clenaMidi.mid", drumlist, sectionNum)
 				
 				self.completeMsgBox()
 				self.reset_click()
@@ -193,23 +232,9 @@ class App(QWidget):
 				self.errMsgBox("No such Midi File !!!")
 		else:
 			self.errMsgBox("Please select a Midi File !!!")
-		
-		#os.system('musescore ' + self.file_name)
+
 	def exit_click(self):
 		self.close()
-
-	def typeSet(self,btn):
-		if btn.text()=='1':
-			gl.set_disassembleType(0)
-		else:
-			gl.set_disassembleType(1)
-	
-	def typeSet_btn(self,b):	
-		print("change",b.checkState())
-		if b.checkState() == 2:
-			print("change2")
-			b.setCheckState(0)
-	
 	
 	def completeMsgBox(self):
 		msgBox = QMessageBox()
@@ -221,9 +246,62 @@ class App(QWidget):
 	def errMsgBox(self,msg):
 		msgBox = QMessageBox();	msgBox.move(150,150)
 		msgBox.setIcon(QMessageBox.Critical); msgBox.setStandardButtons(QMessageBox.Ok)
-		msgBox.setText(msg); msgBox.exec_(); gl.set_pathName("")
-		self.filePath_textbox.setText(gl.get_pathName())
+		msgBox.setText(msg); msgBox.exec_(); self.filePath = ''
+		self.filePath_textbox.setText(self.filePath)
 
+	def connectCheckBox(self):
+		self.hi_het_list_btn[0].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[0]))
+		self.hi_het_list_btn[1].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[1]))
+		self.hi_het_list_btn[2].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[2]))
+		self.hi_het_list_btn[3].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[3]))
+		self.hi_het_list_btn[4].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[4]))
+		self.hi_het_list_btn[5].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[5]))
+		self.hi_het_list_btn[6].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[6]))
+		self.hi_het_list_btn[7].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[7]))
+		self.hi_het_list_btn[8].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[8]))
+		self.hi_het_list_btn[9].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[9]))
+		self.hi_het_list_btn[10].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[10]))
+		self.hi_het_list_btn[11].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[11]))
+		self.hi_het_list_btn[12].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[12]))
+		self.hi_het_list_btn[13].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[13]))
+		self.hi_het_list_btn[14].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[14]))
+		self.hi_het_list_btn[15].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[15]))
+		
+		self.s_drum_list_btn[0].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[0]))
+		self.s_drum_list_btn[1].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[1]))
+		self.s_drum_list_btn[2].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[2]))
+		self.s_drum_list_btn[3].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[3]))
+		self.s_drum_list_btn[4].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[4]))
+		self.s_drum_list_btn[5].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[5]))
+		self.s_drum_list_btn[6].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[6]))
+		self.s_drum_list_btn[7].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[7]))
+		self.s_drum_list_btn[8].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[8]))
+		self.s_drum_list_btn[9].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[9]))
+		self.s_drum_list_btn[10].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[10]))
+		self.s_drum_list_btn[11].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[11]))
+		self.s_drum_list_btn[12].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[12]))
+		self.s_drum_list_btn[13].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[13]))
+		self.s_drum_list_btn[14].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[14]))
+		self.s_drum_list_btn[15].clicked.connect(lambda:self.typeSet_btn(self.s_drum_list_btn[15]))
+		
+		self.b_drum_list_btn[0].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[0]))
+		self.b_drum_list_btn[1].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[1]))
+		self.b_drum_list_btn[2].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[2]))
+		self.b_drum_list_btn[3].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[3]))
+		self.b_drum_list_btn[4].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[4]))
+		self.b_drum_list_btn[5].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[5]))
+		self.b_drum_list_btn[6].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[6]))
+		self.b_drum_list_btn[7].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[7]))
+		self.b_drum_list_btn[8].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[8]))
+		self.b_drum_list_btn[9].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[9]))
+		self.b_drum_list_btn[10].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[10]))
+		self.b_drum_list_btn[11].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[11]))
+		self.b_drum_list_btn[12].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[12]))
+		self.b_drum_list_btn[13].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[13]))
+		self.b_drum_list_btn[14].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[14]))
+		self.b_drum_list_btn[15].clicked.connect(lambda:self.typeSet_btn(self.b_drum_list_btn[15]))
+		
+	
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
 	ex = App()
