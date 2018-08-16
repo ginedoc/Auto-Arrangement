@@ -8,7 +8,7 @@ import mido
 def acc(chord, instr, type, resolution=960):
     if instr>=33 and instr<=40:
         msg=_add_bass(chord, instr, type, int(resolution/4))
-    elif instr>=1 and instr<=8:
+    elif instr>=1 and instr<=24:
         print(chord)
         msg=_add_piano(chord, instr, type, int(resolution/4))
 

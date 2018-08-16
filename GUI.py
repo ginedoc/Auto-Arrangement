@@ -226,7 +226,7 @@ class App(QWidget):
 				popoSong = midiscore.song(self.filePath)              		
 				popoChord = popoSong.chord_estimation('model/model2_05.h5')
 				popoSong.add_accompaniant(popoChord, 35)    # bass
-				popoSong.add_accompaniant(popoChord, 5)     # piano
+				popoSong.add_accompaniant(popoChord, 3)     # piano
 				# 輸出鼓組
 				##drumGenerate.OutputMidi("clenaMidi.mid", drumlist, sectionNum)
 				drumGenerate.OutputMidi("SourceFile/mymidi.mid", drumlist, sectionNum)

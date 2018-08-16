@@ -47,7 +47,21 @@ class song():
     wavpath = './resources/mywav.wav'
     def __init__(self, path):
         self.track_name = path
-        self._update_trackinfo(path)
+        
+        # change melody sound
+        # 65: tenor sax
+        # 53: human sound
+        mid = mido.MidiFile(path)
+        for i,m in enumerate(mid.tracks):
+            for j,mm in enumerate(m):
+                if mm.type=='program_change':
+                    mid.tracks[i][j].program = 23
+                    break
+        
+        mid.save('./SourceFile/mymidi.mid')
+        self._update_trackinfo('./SourceFile/mymidi.mid')
+
+        # self._update_trackinfo(path)
     def _update_trackinfo(self, path):
         mid = mido.MidiFile(path)
         self.track = mid
