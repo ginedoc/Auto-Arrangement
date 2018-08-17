@@ -2,7 +2,6 @@ import numpy as np
 import os
 import pretty_midi
 import mido
-import pyace
 from pydub import AudioSegment
 import locale
 from locale import atof
@@ -40,14 +39,6 @@ def midi2pianoroll(mid):
                         notes[j][0] += 1
     return notes, sixteen_t
 
-def ace_info(src):
-    des='./result.txt'
-    pyace.simpleace(src, des)
-    f=open(des, 'r')
-    info=(f.read()).split()
-    info=np.array(info).reshape((int(len(info)/3),3))
-    os.remove(des)
-    return info
 
 def ratio_train_data(notes, chords, seg_t):
     note_ratio=[]
