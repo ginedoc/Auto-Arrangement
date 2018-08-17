@@ -1,6 +1,5 @@
 import numpy as np
 import mido
-import pyace
 from midi2audio import FluidSynth
 from pydub import AudioSegment
 import os
