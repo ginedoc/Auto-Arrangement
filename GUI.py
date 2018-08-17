@@ -167,7 +167,8 @@ class App(QWidget):
 		
 		midiout = rtmidi.MidiOut()
 		available_ports = midiout.get_ports()
-		
+		print(available_ports)
+        
 		for i in range(0,16):
 			self.hi_het[i] = self.hi_het_list_btn[i].checkState()
 			self.b_drum[i] = self.b_drum_list_btn[i].checkState()
