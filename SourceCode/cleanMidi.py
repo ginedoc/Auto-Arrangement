@@ -40,5 +40,5 @@ def cleanMIDI(path):
 		new_track.append(msg_on);	
 		new_track.append(msg_off);
 
-	cleanMID.save("clenaMidi.mid")
+	cleanMID.save("Recordings/clean/cleanMidi.mid")
 	return math.ceil(cnt/8)  # section數

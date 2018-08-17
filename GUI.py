@@ -2,9 +2,10 @@ import re
 import sys
 import os.path
 from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout
-from PyQt5.QtWidgets import QPushButton, QRadioButton, QCheckBox, QLineEdit, QFileDialog, QLabel, QMessageBox, QComboBox
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtCore import pyqtSlot, QSize
+from PyQt5.QtWidgets import QPushButton, QRadioButton, QCheckBox, QLineEdit, QFileDialog, QLabel, QMessageBox, QComboBox, QPlainTextEdit
+from PyQt5.QtGui import QIcon, QPixmap, QTextCursor
+from PyQt5.QtCore import pyqtSlot, QSize, Qt
+
 
 import time
 import rtmidi
@@ -14,13 +15,14 @@ from mido import Message
 import SourceCode.drumSample as drumSample
 import SourceCode.drumGenerate as drumGenerate
 import SourceCode.cleanMidi as cleanMidi
+import SourceCode.recorder as recorder
+import CK_rec.setup as setup
 import SourceCode.midiscore as midiscore
 
 
 class App(QWidget):
 	
-	filePath = ''
-	
+	filePath = ''; guiObject = [];
 	hi_het = [0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0]; s_drum = [0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0]; b_drum = [0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0]
 	hi_het_list_btn = []; s_drum_list_btn = []; b_drum_list_btn = []
 	
@@ -29,70 +31,114 @@ class App(QWidget):
 		super().__init__()
 		self.initUI()
 
+	def hideGui(self):	
+		for i in self.guiObject:
+			i.hide()
+		for i in range(0,len(self.hi_het_list_btn)):
+			self.hi_het_list_btn[i].hide()
+			self.s_drum_list_btn[i].hide()
+			self.b_drum_list_btn[i].hide()
+		self.textBox.show()
+		self.update()
+		print("HIDE")
+			
+	def showGui(self):
+		print("SHOW")
+		self.textBox.hide()
+		for i in self.guiObject:
+			i.show()
+		for i in range(0,len(self.hi_het_list_btn)):
+			self.hi_het_list_btn[i].show()
+			self.s_drum_list_btn[i].show()
+			self.b_drum_list_btn[i].show()
+		self.textBox.hide()
+		self.update()
+	
+	def keyPressEvent(self, qKeyEvent):
+		#print(qKeyEvent.key())
+		if qKeyEvent.key() == Qt.Key_Return: 
+			print('Enter pressed')
+			self.showGui()
+		else:
+			print(qKeyEvent.key())
+			#super().keyPressEvent(qKeyEvent)
+	
+	
+	
 	def fileOpen_GUI(self,layout):
 		grid = QGridLayout();	grid.setSpacing(10)
-		grid.addWidget(QLabel("請選擇一個MIDI檔案：",self),0,0,1,8)
+		self.label1 = QLabel("請選擇一個MIDI檔案：",self)
+		grid.addWidget(self.label1,0,0,1,8)
 		
 		# file path textbox
 		self.filePath_textbox = QLineEdit(self)
 		grid.addWidget(self.filePath_textbox, 1, 0, 1, 8)
 		# open button
-		open_button = QPushButton('Open File', self)
-		grid.addWidget(open_button, 1, 9, 1, 1)
-		open_button.clicked.connect(self.open_click)
+		self.open_button = QPushButton('Open File', self)
+		grid.addWidget(self.open_button, 1, 9, 1, 1)
+		self.open_button.clicked.connect(self.open_click)
 		
 		# listen button
-		listen_button = QPushButton('試聽', self)
-		grid.addWidget(listen_button, 1, 10, 1, 1)
-		listen_button.clicked.connect(self.listen_click)
+		self.listen_button = QPushButton('試聽', self)
+		grid.addWidget(self.listen_button, 1, 10, 1, 1)
+		self.listen_button.clicked.connect(self.listen_click)
 		# record button
-		record_button = QPushButton('錄製', self)
-		grid.addWidget(record_button, 1, 11, 1, 1)
-		record_button.clicked.connect(self.record_click)
+		self.record_button = QPushButton('錄製', self)
+		grid.addWidget(self.record_button, 1, 11, 1, 1)
+		self.record_button.clicked.connect(self.record_click)
 		
-		layout.addLayout(grid)
+		self.guiObject.append(self.label1)
+		self.guiObject.append(self.filePath_textbox);
+		self.guiObject.append(self.open_button);
+		self.guiObject.append(self.listen_button);
+		self.guiObject.append(self.record_button);
 		
+		layout.addLayout(grid)		
 	
 	def excute_GUI(self,layout):
 		grid = QGridLayout()
 		# listen button
-		listen_button = QPushButton('鼓組試聽', self)
-		grid.addWidget(listen_button,0,5,1,1)
-		listen_button.clicked.connect(self.drumLis_click)
+		self.listen_button = QPushButton('鼓組試聽', self)
+		grid.addWidget(self.listen_button,0,5,1,1)
+		self.listen_button.clicked.connect(self.drumLis_click)
 		
 		# reset button 
-		reset_button = QPushButton('Reset', self)
-		grid.addWidget(reset_button,1,0,1,2)
-		reset_button.clicked.connect(self.reset_click)
+		self.reset_button = QPushButton('Reset', self)
+		grid.addWidget(self.reset_button,1,0,1,2)
+		self.reset_button.clicked.connect(self.reset_click)
 		# run button
-		run_button = QPushButton('Run', self)
-		grid.addWidget(run_button,1,2,1,2)
-		run_button.clicked.connect(self.run_click)
+		self.run_button = QPushButton('Run', self)
+		grid.addWidget(self.run_button,1,2,1,2)
+		self.run_button.clicked.connect(self.run_click)
 		# exit button
-		exit_button = QPushButton('Exit', self)
-		grid.addWidget(exit_button,1,4,1,2)
-		exit_button.clicked.connect(self.exit_click)	
+		self.exit_button = QPushButton('Exit', self)
+		grid.addWidget(self.exit_button,1,4,1,2)
+		self.exit_button.clicked.connect(self.exit_click)	
+		
+		self.guiObject.append(self.listen_button)
+		self.guiObject.append(self.reset_button)
+		self.guiObject.append(self.run_button)
+		self.guiObject.append(self.exit_button)
 		
 		layout.addLayout(grid)
-	
 	
 	def drumBtn_GUI(self,layout):
 	
 		a = 25; cnt = 0
 		grid = QGridLayout(); grid.setVerticalSpacing(11)
-		grid.addWidget(QLabel("請選擇鼓組(以16分音符為一單位)："),0,0,1,50)
+		self.label2 = QLabel("請選擇鼓組(以16分音符為一單位)：")
+		grid.addWidget(self.label2,0,0,1,50)
 		
 		self.select_button = QComboBox(self)
 		grid.addWidget(self.select_button, 1, 0, 1 ,50)
 		self.select_button.addItem("Empty")
 		self.select_button.addItem("Basic 1")
 		self.select_button.addItem("Basic 2")
-		self.select_button.currentIndexChanged.connect(lambda:self.select_click(self.select_button))
-		
+		self.select_button.currentIndexChanged.connect(lambda:self.select_click(self.select_button))	
 		
 		pic = QPixmap("SourceFile/drum.jpg").scaled(QSize(450,100))
-		bgPic = QLabel("123",self);  bgPic.setPixmap(pic)	
-		grid.addWidget(bgPic,2,0,10,50)
+		self.bgPic = QLabel("123",self);  self.bgPic.setPixmap(pic)	
+		grid.addWidget(self.bgPic,2,0,10,50)
 		for i in range(0,16):
 			if i%4==0:
 				cnt+=1
@@ -102,9 +148,17 @@ class App(QWidget):
 			self.hi_het_list_btn[i].setTristate(True);	self.s_drum_list_btn[i].setTristate(True);	self.b_drum_list_btn[i].setTristate(True); 
 		
 		self.connectCheckBox()
-		
+		self.guiObject.append(self.label2)
+		self.guiObject.append(self.bgPic)
+		self.guiObject.append(self.select_button)
 		
 		layout.addLayout(grid)
+	
+	def record_GUI(self,layout):
+		self.textBox = QPlainTextEdit()
+		layout.addWidget(self.textBox)
+		self.textBox.setDisabled(True)
+		self.textBox.hide()
 	
 	def initUI(self):
 		self.setWindowTitle('自動伴奏產生器')
@@ -114,9 +168,10 @@ class App(QWidget):
 		self.drumBtn_GUI(grid)
 		self.excute_GUI(grid)
 		self.setLayout(grid)
+		self.record_GUI(grid)
 		
 		self.show()
-		
+		self.setFixedSize(self.size())
 		
 	def MidiFile_DataSet_show(self):
 		print("main Key : ", self.filePath)
@@ -132,7 +187,7 @@ class App(QWidget):
 			self.b_drum_list_btn[i].setCheckState(0)
 		self.select_button.setCurrentIndex(0)
 		self.filePath = '';  self.filePath_textbox.setText(self.filePath)
-		
+		self.textBox.setPlainText("")
 	
 	def open_click(self):
 		self.openFileNameDialog()
@@ -148,6 +203,10 @@ class App(QWidget):
 		print("listen click")
 	def record_click(self):		
 		print("record click")
+		#self.hideGui()
+		file = recorder.record(self.textBox)
+		print(file)
+		self.filePath_textbox.setText(file)
 	
 	def select_click(self,box):
 		#print(box.currentIndex())
@@ -195,11 +254,14 @@ class App(QWidget):
 				else:
 					cnt+=1
 		time.sleep(time_delta)
+		self.listen_button.setDisabled(False)
 		del midiout
+		
 
 		
 	def drumLis_click(self):
 		print("drum listen")
+		self.listen_button.setDisabled(True)
 		t = threading.Thread(target = self.DrumOutputSample)
 		t.start()
 			
@@ -213,7 +275,7 @@ class App(QWidget):
 		regular = r'([A-z]*)(.mid)' ;	p = re.compile(regular)
 		if p.search(self.filePath) != None:
 			if os.path.isfile( self.filePath ):
-				
+				#print(self.filePath)
 				for i in range(0,16):
 					self.hi_het[i] = self.hi_het_list_btn[i].checkState()
 					self.b_drum[i] = self.b_drum_list_btn[i].checkState()
@@ -223,11 +285,13 @@ class App(QWidget):
 				drumlist.append(self.hi_het); drumlist.append(self.s_drum);  drumlist.append(self.b_drum);
 				# 整理midi樂譜
 				sectionNum = cleanMidi.cleanMIDI(self.filePath)
+				
 				# 其他伴奏加入
-				popoSong = midiscore.song(self.filePath)              		
+				popoSong = midiscore.song('Recordings/clean/cleanMidi.mid')              		
 				popoChord = popoSong.chord_estimation('model/model2_05.h5')
 				popoSong.add_accompaniant(popoChord, 35)    # bass
 				popoSong.add_accompaniant(popoChord, 5)     # piano
+				
 				# 輸出鼓組
 				##drumGenerate.OutputMidi("clenaMidi.mid", drumlist, sectionNum)
 				drumGenerate.OutputMidi("SourceFile/mymidi.mid", drumlist, sectionNum)
