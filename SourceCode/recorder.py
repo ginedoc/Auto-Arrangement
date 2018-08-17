@@ -37,5 +37,5 @@ def record(textBox):
 		if name != "":
 			midiRec.saveTrack(name)
 		codeK.end()
-		return "Recordings/" + name
+		return "Recordings/" + name + '.mid'
 	

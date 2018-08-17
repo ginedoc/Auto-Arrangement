@@ -17,7 +17,7 @@ import SourceCode.drumGenerate as drumGenerate
 import SourceCode.cleanMidi as cleanMidi
 import SourceCode.recorder as recorder
 import CK_rec.setup as setup
-# import SourceCode.midiscore as midiscore
+import SourceCode.midiscore as midiscore
 
 
 class App(QWidget):
@@ -274,7 +274,7 @@ class App(QWidget):
 		regular = r'([A-z]*)(.mid)' ;	p = re.compile(regular)
 		if p.search(self.filePath) != None:
 			if os.path.isfile( self.filePath ):
-				
+				#print(self.filePath)
 				for i in range(0,16):
 					self.hi_het[i] = self.hi_het_list_btn[i].checkState()
 					self.b_drum[i] = self.b_drum_list_btn[i].checkState()
@@ -286,10 +286,10 @@ class App(QWidget):
 				sectionNum = cleanMidi.cleanMIDI(self.filePath)
 				
 				# 其他伴奏加入
-				##popoSong = midiscore.song(self.filePath)              		
-				##popoChord = popoSong.chord_estimation('model/model2_05.h5')
-				##popoSong.add_accompaniant(popoChord, 35)    # bass
-				##popoSong.add_accompaniant(popoChord, 5)     # piano
+				popoSong = midiscore.song('Recordings/clean/cleanMidi.mid')              		
+				popoChord = popoSong.chord_estimation('model/model2_05.h5')
+				popoSong.add_accompaniant(popoChord, 35)    # bass
+				popoSong.add_accompaniant(popoChord, 5)     # piano
 				
 				# 輸出鼓組
 				##drumGenerate.OutputMidi("clenaMidi.mid", drumlist, sectionNum)
