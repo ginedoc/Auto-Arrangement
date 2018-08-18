@@ -285,7 +285,8 @@ class App(QWidget):
 				drumlist.append(self.hi_het); drumlist.append(self.s_drum);  drumlist.append(self.b_drum);
 				# 整理midi樂譜
 				sectionNum = cleanMidi.cleanMIDI(self.filePath)
-				
+				os.system('mscore ' + self.filePath + ' -o ' + 'Recordings/clean/cleanMidi.mid')
+                
 				# 其他伴奏加入
 				popoSong = midiscore.song('Recordings/clean/cleanMidi.mid')              		
 				popoChord = popoSong.chord_estimation('model/model2_05.h5')
