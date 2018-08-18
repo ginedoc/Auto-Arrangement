@@ -13,13 +13,19 @@
 2. **Lin** GUI
 
 ### [16.Aug.2018]
-* integration
+[v] integration
 
 ### [17.Aug.2018]
-* DEMO PROF.
+[v] DEMO PROF.
 
 ### [20.Aug.2018]
-* 計劃書
+[] 計劃書
+
+### [23.Aug.2018]
+[] Audition
+
+### [24.Aug.2018]
+[] bonus
 
 ### [25.Aug.2018]
-* 海報
+[] 海報
