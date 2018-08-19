@@ -227,6 +227,7 @@ class App(QWidget):
 		midiout = rtmidi.MidiOut()
 		available_ports = midiout.get_ports()
 		print(available_ports)
+		print(midiout)
         
 		for i in range(0,16):
 			self.hi_het[i] = self.hi_het_list_btn[i].checkState()
@@ -236,8 +237,10 @@ class App(QWidget):
 
 		if available_ports:
 			midiout.open_port(0)
+			print('open 0')
 		else:
 			midiout.open_virtual_port("My virtual output")
+			print('My virtual')
 
 		for i in range(0,2):  # repeat leng times
 			for i in range(0,len(durm_list[0])):	# one section tempo
