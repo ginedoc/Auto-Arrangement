@@ -17,6 +17,7 @@ def record(textBox):
 	codeK = Setup(textBox)
 	myPort = codeK.perform_setup()
 	codeK.open_port(myPort)
+
 	
 	on_id = codeK.get_device_id()
 	print('your note on id is: ', on_id)
