@@ -1,27 +1,21 @@
-import re
-import sys
-import os.path
 from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout
 from PyQt5.QtWidgets import QPushButton, QRadioButton, QCheckBox, QLineEdit, QFileDialog, QLabel, QMessageBox, QComboBox, QPlainTextEdit, QInputDialog
 from PyQt5.QtGui import QIcon, QPixmap, QTextCursor
 from PyQt5.QtCore import pyqtSlot, QSize, Qt, QThread
 
-
+import re
+import sys
+import os
+import inspect
 import time
 import rtmidi
 import threading
-import os
-import sys
-import inspect
 from mido import Message
 from CK_rec.setup import Setup
 from CK_rec.rec_classes import CK_rec
 
 import SourceCode.drumSample as drumSample
 import SourceCode.drumGenerate as drumGenerate
-import SourceCode.cleanMidi as cleanMidi
-import SourceCode.recorder as recorder
-import CK_rec.setup as setup
 import SourceCode.midiscore as midiscore
 
 
@@ -74,7 +68,6 @@ class App(QWidget):
 					self.NoticeMsgBox("錄音完成，請按下OK後繼續操作"); self.unlockGUI()
 			else:
 				print(qKeyEvent.key())
-	
 	
 	
 	def fileOpen_GUI(self,layout):
@@ -265,7 +258,7 @@ class App(QWidget):
 			self.codeK.open_port(myPort)
 			
 			
-			self.NoticeMsgBox("確認後，請隨意按下一個keyboard上的鍵盤");
+			self.NoticeMsgBox("OK後，請隨意按下一個keyboard上的鍵盤");
 			# 這可以直接利用測試的來寫死(雖然不同樂器on_id不同)
 			on_id = self.codeK.get_device_id();  print("on_id : ", on_id)
 			self.midiRec = CK_rec(myPort, on_id, debug=True)
@@ -390,20 +383,6 @@ class App(QWidget):
 	def exit_click(self):
 		self.close()
 	
-	'''
-	def remindMsgBox(self):
-		self.remindmsgBox = QMessageBox(); self.remindmsgBox.move(150,150)
-		self.remindmsgBox.setIcon(QMessageBox.Information); self.remindmsgBox.setStandardButtons(QMessageBox.Ok)
-		self.remindmsgBox.setText()
-		self.remindmsgBox.exec_()
-	
-	
-	def recordMsgBox(self):
-		self.recordmsgBox = QMessageBox(); self.recordmsgBox.move(150,150)
-		self.recordmsgBox.setIcon(QMessageBox.Information); self.recordmsgBox.setStandardButtons(QMessageBox.Ok)
-		self.recordmsgBox.setText()
-		self.recordmsgBox.exec_()
-	'''
 	def NoticeMsgBox(self,msg):
 		msgBox = QMessageBox();	msgBox.move(150,150)
 		msgBox.setIcon(QMessageBox.Information); msgBox.setStandardButtons(QMessageBox.Ok)
