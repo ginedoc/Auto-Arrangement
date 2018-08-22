@@ -254,6 +254,7 @@ class App(QWidget):
 		else:
 			print("record set"); self.recording = 1;
 			
+			print(self.portSel.text())
 			myPort = int(self.portSel.text()); print(myPort)
 			self.codeK.open_port(myPort)
 			
