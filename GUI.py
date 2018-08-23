@@ -17,6 +17,7 @@ from CK_rec.rec_classes import CK_rec
 import SourceCode.drumSample as drumSample
 import SourceCode.drumGenerate as drumGenerate
 import SourceCode.midiscore as midiscore
+import SourceCode.cleanMidi as cleanMidi
 
 
 class App(QWidget):
@@ -187,7 +188,7 @@ class App(QWidget):
 		parentdir = os.path.dirname(currentdir)
 		sys.path.insert(0,parentdir)
 		self.codeK = Setup()
-	
+		
 	def initUI(self):
 		self.setWindowTitle('自動伴奏產生器')
 
@@ -234,16 +235,18 @@ class App(QWidget):
 		
 	
 	#需再測試 - 選擇input的port
-	def sel_click(self):	
-		self.items = self.codeK.get_ports()
-		self.items.append('null') 
-		#self.items.append('0')  #到時需刪除
-		print(self.items)
-		
-		item, ok = QInputDialog.getItem(self, "", "List of ports", self.items, 0, False)
-		if ok and item:
-			self.portSel.setText(item)
-		del self.items[:]
+	def sel_click(self):
+            self.codeK = Setup()
+            self.items = self.codeK.get_ports()
+            self.items.append('null') 
+            #self.items.append('0')  #到時需刪除
+            print(self.items)
+        
+            item, ok = QInputDialog.getItem(self, "", "List of ports", self.items, 0, False)
+            if ok and item:
+                self.portSel.setText(item)
+                self.myPort = self.items.index(item)
+            del self.items[:]
 		
 	#需再測試		
 	def record_click(self):		
@@ -254,17 +257,18 @@ class App(QWidget):
 		else:
 			print("record set"); self.recording = 1;
 			
-			print(self.portSel.text())
-			myPort = int(self.portSel.text()); print(myPort)
-			self.codeK.open_port(myPort)
+			#myPort = int(self.portSel.text()); print(myPort)
+			print("myPort : ",self.myPort," ",self.portSel.text())
+			self.codeK = Setup()
+			self.codeK.open_port(self.myPort)
 			
 			
 			self.NoticeMsgBox("OK後，請隨意按下一個keyboard上的鍵盤");
 			# 這可以直接利用測試的來寫死(雖然不同樂器on_id不同)
 			on_id = self.codeK.get_device_id();  print("on_id : ", on_id)
-			self.midiRec = CK_rec(myPort, on_id, debug=True)
+			self.midiRec = CK_rec(self.myPort, on_id, debug=True)
 			self.codeK.set_callback(self.midiRec)
-			
+
 			
 			self.NoticeMsgBox("準備開始錄音....\n－按下OK即可開始錄製\n－按下ENTER即可停止錄音"); self.lockGUI()
 			t = threading.Thread(target = self.record_start); t.start()
