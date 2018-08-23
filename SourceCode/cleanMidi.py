@@ -42,3 +42,4 @@ def cleanMIDI(path):
 
 	cleanMID.save("Recordings/clean/cleanMidi.mid")
 	return math.ceil(cnt/8)  # section數
+ 
