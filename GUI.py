@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QHBoxLayout, QVB
 from PyQt5.QtWidgets import QPushButton, QRadioButton, QCheckBox, QLineEdit, QFileDialog, QLabel, QMessageBox, QComboBox, QPlainTextEdit, QInputDialog
 from PyQt5.QtGui import QIcon, QPixmap, QTextCursor
 from PyQt5.QtCore import pyqtSlot, QSize, Qt, QThread
+from PyQt5.QtMultimedia import QSound
 
 import re
 import sys
@@ -10,6 +11,7 @@ import inspect
 import time
 import rtmidi
 import threading
+from midi2audio import FluidSynth
 from mido import Message
 from CK_rec.setup import Setup
 from CK_rec.rec_classes import CK_rec
@@ -232,7 +234,13 @@ class App(QWidget):
 	# 需要再加(看是MP3 還是MIDI)
 	def listen_click(self):
 		print("listen click")
-		
+		#self.filePath
+		fs = FluidSynth()
+		fs.midi_to_audio(self.filePath, 'test.wav')
+		#listen thread
+		QSound.play('test.wav')
+
+		os.remove('test.wav')
 	
 	#需再測試 - 選擇input的port
 	def sel_click(self):
