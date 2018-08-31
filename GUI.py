@@ -238,10 +238,10 @@ class App(QWidget):
 		print("listen click")
 		#self.filePath
 		fs = FluidSynth()
-		#fs.midi_to_audio(self.filePath, 'test_listen.wav')
+		fs.midi_to_audio(self.filePath, 'test_listen.wav')
 		#listen thread
-		fs.play_midi(self.filePath)
-		#QSound.play('test_listen.wav')
+		#fs.play_midi(self.filePath)
+		QSound.play('test_listen.wav')
 
 		#os.remove('test.wav')
 	
@@ -395,6 +395,7 @@ class App(QWidget):
 				self.errMsgBox("No such Midi File !!!")
 		else:
 			self.errMsgBox("Please select a Midi File !!!")
+		os.system('mscore new_song.mid')
 
 	def exit_click(self):
 		self.close()
