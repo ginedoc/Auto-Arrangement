@@ -16,10 +16,18 @@ from mido import Message
 from CK_rec.setup import Setup
 from CK_rec.rec_classes import CK_rec
 
+
+from SourceCode.setup import Setup
+from SourceCode.rec_classes import CK_rec
+
 import SourceCode.drumSample as drumSample
 import SourceCode.drumGenerate as drumGenerate
 import SourceCode.midiscore as midiscore
+<<<<<<< HEAD
+import SourceCode.sectionNumber as sectionNumber
+=======
 import SourceCode.cleanMidi as cleanMidi
+>>>>>>> 47cfdd8b72b7d81f14d61bc21fe5f0d5e4576c8f
 
 
 class App(QWidget):
@@ -377,7 +385,11 @@ class App(QWidget):
 				
 				# 整理midi樂譜
 				os.system('mscore ' + self.filePath + ' -o ' + 'Recordings/clean/cleanMidi.mid')
+<<<<<<< HEAD
+				sectionNum = sectionNumber.secNum('Recordings/clean/cleanMidi.mid')
+=======
 				sectionNum = cleanMidi.cleanMIDI('Recordings/clean/cleanMidi.mid')
+>>>>>>> 47cfdd8b72b7d81f14d61bc21fe5f0d5e4576c8f
                 
 				# 其他伴奏加入
 				popoSong = midiscore.song('Recordings/clean/cleanMidi.mid')              		

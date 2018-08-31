@@ -52,7 +52,3 @@ class Setup(object):
 
     def send_message(self, message):
         return self.__midiout.send_message(message)
-
-
-
-
