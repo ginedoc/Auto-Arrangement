@@ -61,17 +61,18 @@ class App(QWidget):
 	def finishRecording(self):
 		self.recording = 0;	
 		name, ok = QInputDialog.getText(self, '', 'Save midi recording as?')
-			if ok:
-				print("FILE NAME : ", name)
-				if name != "":
-					self.midiRec.saveTrack(name)
-					self.filePath_textbox.setText("Recordings/" + name + '.mid')
-				else :
-					self.midiRec.saveTrack("default")
-					self.filePath_textbox.setText("Recordings/default.mid")	
-				self.codeK.end()
-				self.NoticeMsgBox("錄音完成，請按下OK後繼續操作"); self.unlockGUI()
-	
+		if ok:
+			print("FILE NAME : ", name)
+			if name != "":
+				self.midiRec.saveTrack(name)
+				self.filePath_textbox.setText("Recordings/" + name + '.mid')
+			else :
+				self.midiRec.saveTrack("default")
+				self.filePath_textbox.setText("Recordings/default.mid")	
+			self.filePath = self.filePath_textbox.text()
+			self.codeK.end()
+			self.NoticeMsgBox("錄音完成，請按下OK後繼續操作"); 
+		self.unlockGUI()
 	
 	
 	def keyPressEvent(self, qKeyEvent):
@@ -245,7 +246,7 @@ class App(QWidget):
 		#fs.play_midi(self.filePath)
 		QSound.play('test_listen.wav')
 
-		#os.remove('test.wav')
+		os.remove('test_listen.wav')
 	
 	#需再測試 - 選擇input的port
 	def sel_click(self):
@@ -269,21 +270,25 @@ class App(QWidget):
 				print("error midi device")
 				self.errMsgBox("Error midi device")
 			else:
-				print("record set"); self.recording = 1;
+				print("record set"); 
 				
 				#myPort = int(self.portSel.text()); print(myPort)
 				print("myPort : ",self.myPort," ",self.portSel.text())
 				self.codeK = Setup()
 				self.codeK.open_port(self.myPort)			
+
 				
-				self.NoticeMsgBox("OK後，請隨意按下一個keyboard上的鍵盤");
-				# 這可以直接利用測試的來寫死(雖然不同樂器on_id不同)
-				on_id = self.codeK.get_device_id();  print("on_id : ", on_id)
-				self.midiRec = CK_rec(self.myPort, on_id, debug=True)
-				self.codeK.set_callback(self.midiRec)
+				if self.NoticeMsgBox("OK後，請隨意按下一個keyboard上的鍵盤") == QMessageBox.Ok:
+					# 這可以直接利用測試的來寫死(雖然不同樂器on_id不同)
+					on_id = self.codeK.get_device_id();  print("on_id : ", on_id)
+					self.midiRec = CK_rec(self.myPort, on_id, debug=True)
+					self.codeK.set_callback(self.midiRec)
+
+					if self.NoticeMsgBox("準備開始錄音....\n－按下OK即可開始錄製\n－按下ENTER即可停止錄音") == QMessageBox.Ok:
+						self.lockGUI()		
+						self.recording = 1;	
+						t = threading.Thread(target = self.record_start); t.start()
 				
-				self.NoticeMsgBox("準備開始錄音....\n－按下OK即可開始錄製\n－按下ENTER即可停止錄音"); self.lockGUI()
-				#t = threading.Thread(target = self.record_start); t.start()
 		elif self.recording == 1:
 			self.finishRecording()
 		
@@ -394,16 +399,16 @@ class App(QWidget):
 	
 	def NoticeMsgBox(self,msg):
 		msgBox = QMessageBox();	msgBox.move(150,150)
-		msgBox.setIcon(QMessageBox.Information); msgBox.setStandardButtons(QMessageBox.Ok)
+		msgBox.setIcon(QMessageBox.Information); msgBox.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
 		msgBox.setText(msg);
-		msgBox.exec_()
+		return msgBox.exec_()
 
 	def errMsgBox(self,msg):
 		self.filePath = '';	self.filePath_textbox.setText(self.filePath)
 		msgBox = QMessageBox();	msgBox.move(150,150)
 		msgBox.setIcon(QMessageBox.Critical); msgBox.setStandardButtons(QMessageBox.Ok)
 		msgBox.setText(msg); 
-		msgBox.exec_(); 
+		return msgBox.exec_(); 
 
 	def connectCheckBox(self):
 		self.hi_het_list_btn[0].clicked.connect(lambda:self.typeSet_btn(self.hi_het_list_btn[0]))
