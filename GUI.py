@@ -240,11 +240,12 @@ class App(QWidget):
 		print("listen click")
 		#self.filePath
 		fs = FluidSynth()
-		fs.midi_to_audio(self.filePath, 'test.wav')
+		#fs.midi_to_audio(self.filePath, 'test_listen.wav')
 		#listen thread
-		QSound.play('test.wav')
+		fs.play_midi(self.filePath)
+		#QSound.play('test_listen.wav')
 
-		os.remove('test.wav')
+		#os.remove('test.wav')
 	
 	#需再測試 - 選擇input的port
 	def sel_click(self):
