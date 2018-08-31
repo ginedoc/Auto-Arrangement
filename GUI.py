@@ -13,9 +13,6 @@ import rtmidi
 import threading
 from midi2audio import FluidSynth
 from mido import Message
-from CK_rec.setup import Setup
-from CK_rec.rec_classes import CK_rec
-
 
 from SourceCode.setup import Setup
 from SourceCode.rec_classes import CK_rec
@@ -23,11 +20,7 @@ from SourceCode.rec_classes import CK_rec
 import SourceCode.drumSample as drumSample
 import SourceCode.drumGenerate as drumGenerate
 import SourceCode.midiscore as midiscore
-<<<<<<< HEAD
 import SourceCode.sectionNumber as sectionNumber
-=======
-import SourceCode.cleanMidi as cleanMidi
->>>>>>> 47cfdd8b72b7d81f14d61bc21fe5f0d5e4576c8f
 
 
 class App(QWidget):
@@ -52,6 +45,9 @@ class App(QWidget):
 			self.hi_het_list_btn[i].setDisabled(True)
 			self.s_drum_list_btn[i].setDisabled(True)
 			self.b_drum_list_btn[i].setDisabled(True)
+		self.record_button.setText("停止錄音")
+		
+			
 	def unlockGUI(self):
 		for item in self.guiObject:
 			item.setDisabled(False)
@@ -59,24 +55,30 @@ class App(QWidget):
 			self.hi_het_list_btn[i].setDisabled(False)
 			self.s_drum_list_btn[i].setDisabled(False)
 			self.b_drum_list_btn[i].setDisabled(False)
+		self.record_button.setText("錄製")
+		
+	
+	def finishRecording(self):
+		self.recording = 0;	
+		name, ok = QInputDialog.getText(self, '', 'Save midi recording as?')
+			if ok:
+				print("FILE NAME : ", name)
+				if name != "":
+					self.midiRec.saveTrack(name)
+					self.filePath_textbox.setText("Recordings/" + name + '.mid')
+				else :
+					self.midiRec.saveTrack("default")
+					self.filePath_textbox.setText("Recordings/default.mid")	
+				self.codeK.end()
+				self.NoticeMsgBox("錄音完成，請按下OK後繼續操作"); self.unlockGUI()
+	
+	
 	
 	def keyPressEvent(self, qKeyEvent):
 		if self.recording == 1:
 			if qKeyEvent.key() == Qt.Key_Return:
-				print(qKeyEvent.key())
-				self.recording = 0;		print("Enter pressed - STOP RECORDING")		
-				
-				name, ok = QInputDialog.getText(self, '', 'Save midi recording as?')
-				if ok:
-					print("FILE NAME : ", name)
-					if name != "":
-						self.midiRec.saveTrack(name)
-						self.filePath_textbox.setText("Recordings/" + name + '.mid')
-					else :
-						self.midiRec.saveTrack("default")
-						self.filePath_textbox.setText("Recordings/default.mid")	
-					self.codeK.end()
-					self.NoticeMsgBox("錄音完成，請按下OK後繼續操作"); self.unlockGUI()
+				print(qKeyEvent.key(),"Enter pressed - STOP RECORDING")
+				self.finishRecording()
 			else:
 				print(qKeyEvent.key())
 	
@@ -125,7 +127,7 @@ class App(QWidget):
 		self.guiObject.append(self.label_deviceChoose)
 		#self.guiObject.append(self.portSel);
 		self.guiObject.append(self.portSel_button);
-		self.guiObject.append(self.record_button);
+		#self.guiObject.append(self.record_button);
 		
 		layout.addLayout(grid)		
 	
@@ -211,12 +213,6 @@ class App(QWidget):
 		
 		self.record_setup()
 		
-	'''	
-	def MidiFile_DataSet_show(self):
-		print("main Key : ", self.filePath)
-		print("ticks_per_beat : ",self.ticks_per_beat) # resolution
-		print("mainkey : ",self.mainKey)
-	'''
 	@pyqtSlot()
 	
 	def reset_click(self):
@@ -267,46 +263,36 @@ class App(QWidget):
 	#需再測試		
 	def record_click(self):		
 		print("record click");
-		if self.portSel.text() == 'null':
-			print("error midi device")
-			self.errMsgBox("Error midi device")
-		else:
-			print("record set"); self.recording = 1;
-			
-			#myPort = int(self.portSel.text()); print(myPort)
-			print("myPort : ",self.myPort," ",self.portSel.text())
-			self.codeK = Setup()
-			self.codeK.open_port(self.myPort)
-			
-			
-			self.NoticeMsgBox("OK後，請隨意按下一個keyboard上的鍵盤");
-			# 這可以直接利用測試的來寫死(雖然不同樂器on_id不同)
-			on_id = self.codeK.get_device_id();  print("on_id : ", on_id)
-			self.midiRec = CK_rec(self.myPort, on_id, debug=True)
-			self.codeK.set_callback(self.midiRec)
-
-			
-			self.NoticeMsgBox("準備開始錄音....\n－按下OK即可開始錄製\n－按下ENTER即可停止錄音"); self.lockGUI()
-			t = threading.Thread(target = self.record_start); t.start()
-			
+		if self.recording == 0:		
+			if self.portSel.text() == 'null':
+				print("error midi device")
+				self.errMsgBox("Error midi device")
+			else:
+				print("record set"); self.recording = 1;
+				
+				#myPort = int(self.portSel.text()); print(myPort)
+				print("myPort : ",self.myPort," ",self.portSel.text())
+				self.codeK = Setup()
+				self.codeK.open_port(self.myPort)			
+				
+				self.NoticeMsgBox("OK後，請隨意按下一個keyboard上的鍵盤");
+				# 這可以直接利用測試的來寫死(雖然不同樂器on_id不同)
+				on_id = self.codeK.get_device_id();  print("on_id : ", on_id)
+				self.midiRec = CK_rec(self.myPort, on_id, debug=True)
+				self.codeK.set_callback(self.midiRec)
+				
+				self.NoticeMsgBox("準備開始錄音....\n－按下OK即可開始錄製\n－按下ENTER即可停止錄音"); self.lockGUI()
+				#t = threading.Thread(target = self.record_start); t.start()
+		elif self.recording == 1:
+			self.finishRecording()
+		
 			
 	#需再測試
 	def record_start(self):
-		print("record_start")
-		'''
-		myPort = int(self.portSel.text()); print(myPort)
-		self.codeK.open_port(myPort)
-		
-		# 這可以直接利用測試的來寫死(雖然不同樂器on_id不同)
-		on_id = self.codeK.get_device_id();  print("on_id : ", on_id)
-		midiRec = CK_rec(myPort, on_id, debug=True)
-		self.codeK.set_callback(midiRec)
-		'''
-		
+		print("record_start")		
 		while self.recording == 1:
 			time.sleep(0.001)
-		print("End Recording")  
-			
+		print("End Recording")  		
 		
 	
 	def select_click(self,box):   # ComboBox select clicked
@@ -383,11 +369,7 @@ class App(QWidget):
 				
 				# 整理midi樂譜
 				os.system('mscore ' + self.filePath + ' -o ' + 'Recordings/clean/cleanMidi.mid')
-<<<<<<< HEAD
 				sectionNum = sectionNumber.secNum('Recordings/clean/cleanMidi.mid')
-=======
-				sectionNum = cleanMidi.cleanMIDI('Recordings/clean/cleanMidi.mid')
->>>>>>> 47cfdd8b72b7d81f14d61bc21fe5f0d5e4576c8f
                 
 				# 其他伴奏加入
 				popoSong = midiscore.song('Recordings/clean/cleanMidi.mid')              		
