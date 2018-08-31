@@ -66,7 +66,8 @@ class App(QWidget):
 						self.filePath_textbox.setText("Recordings/" + name + '.mid')
 					else :
 						self.midiRec.saveTrack("default")
-						self.filePath_textbox.setText("Recordings/default.mid")	
+						self.filePath_textbox.setText("Recordings/default.mid")
+					self.filePath=self.filePath_textbox.text()
 					self.codeK.end()
 					self.NoticeMsgBox("錄音完成，請按下OK後繼續操作"); self.unlockGUI()
 			else:
@@ -236,11 +237,12 @@ class App(QWidget):
 		print("listen click")
 		#self.filePath
 		fs = FluidSynth()
-		fs.midi_to_audio(self.filePath, 'test.wav')
+		#fs.midi_to_audio(self.filePath, 'test_listen.wav')
 		#listen thread
-		QSound.play('test.wav')
+		fs.play_midi(self.filePath)
+		#QSound.play('test_listen.wav')
 
-		os.remove('test.wav')
+		#os.remove('test.wav')
 	
 	#需再測試 - 選擇input的port
 	def sel_click(self):
