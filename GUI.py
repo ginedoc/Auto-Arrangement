@@ -163,7 +163,7 @@ class App(QWidget):
 	
 	def drumBtn_GUI(self,layout):
 	
-		a = 25; cnt = 0
+		a = 16; cnt = 0
 		grid = QGridLayout(); grid.setVerticalSpacing(11)
 		self.label_selectDrum = QLabel("請選擇鼓組(以16分音符為一單位)：")
 		grid.addWidget(self.label_selectDrum,0,0,1,50)
@@ -178,12 +178,12 @@ class App(QWidget):
 		self.select_comboBox.currentIndexChanged.connect(lambda:self.select_click(self.select_comboBox))	
 		
 		
-		pic = QPixmap("SourceFile/drum.jpg").scaled(QSize(450,100))
+		pic = QPixmap("SourceFile/drum.jpg").scaled(QSize(600,120))
 		self.bgPic = QLabel("123",self);  self.bgPic.setPixmap(pic)	
 		grid.addWidget(self.bgPic,2,0,10,50)
 		for i in range(0,16):
 			if i%4==0:
-				cnt+=1
+				cnt+=3
 			self.hi_het_list_btn.append(QCheckBox("",self));  grid.addWidget(self.hi_het_list_btn[i],2,a+i+cnt,1,1)
 			self.s_drum_list_btn.append(QCheckBox("",self));  grid.addWidget(self.s_drum_list_btn[i],4,a+i+cnt,1,1)
 			self.b_drum_list_btn.append(QCheckBox("",self));  grid.addWidget(self.b_drum_list_btn[i],6,a+i+cnt,1,1)
