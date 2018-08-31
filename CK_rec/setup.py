@@ -12,6 +12,7 @@ class Setup(object):
         self.__ports = self.__midiin.get_ports()
         self.__ports_out = self.__midiout.get_ports()
         self.textBox = textbox
+		self.selected_midiport = -1
 
     def print_welcome(self):
         print('');
@@ -42,8 +43,25 @@ class Setup(object):
             print(self.__ports.index(port), " -> ", port)
             self.textBox.setPlainText(text + "    " + str(self.__ports.index(port)) + " -> " + port + "\n")			
         self.textBox.moveCursor(QTextCursor.End)
-			
-
+	
+	def get_port_from_user(self):
+		#self.selected_midiport = -1
+        while self.selected_midiport < 0:
+            try:
+                #choice = input("Please choose the MIDI device (number) you want to use and hit Enter:")
+                #self.selected_midiport = int(choice)
+                if self.selected_midiport < 0 or self.selected_midiport >= len(self.__ports):
+                    print("Invalid number, please try again:")
+                    self.selected_midiport = -1
+                else:
+                    return self.selected_midiport
+            except KeyboardInterrupt:
+                print('\n', "You want to quit? ¯\('…')/¯  ok, Bye bye.")
+                exit()
+            except ValueError:
+                print("Sorry, type a valid port numer!")
+	
+	'''
     def get_port_from_user(self):
 	
         selected_midiport = -1
@@ -61,7 +79,8 @@ class Setup(object):
                 exit()
             except ValueError:
                 print("Sorry, type a valid port numer!")
-
+	'''
+	
     def open_port(self, pnum):
         print("You have chosen: ", self.__ports[pnum])
 
