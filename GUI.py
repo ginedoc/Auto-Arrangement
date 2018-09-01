@@ -246,7 +246,7 @@ class App(QWidget):
 		#fs.play_midi(self.filePath)
 		QSound.play('test_listen.wav')
 
-		os.remove('test_listen.wav')
+#		os.remove('test_listen.wav')
 	
 	#需再測試 - 選擇input的port
 	def sel_click(self):
@@ -379,7 +379,7 @@ class App(QWidget):
                 
 				# 其他伴奏加入
 				popoSong = midiscore.song('Recordings/clean/cleanMidi.mid')              		
-				popoChord = popoSong.chord_estimation('model/model2_05.h5')
+				popoChord = popoSong.chord_estimation('model/model_single_classical.h5')
 				popoSong.add_accompaniant(popoChord, 35)    # bass
 				popoSong.add_accompaniant(popoChord, 5)     # piano
 				

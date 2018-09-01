@@ -2,6 +2,7 @@ import numpy as np
 import os
 import pretty_midi
 import mido
+import pyace
 from pydub import AudioSegment
 import locale
 from locale import atof
@@ -31,14 +32,26 @@ def midi2pianoroll(mid):
         print(instrument)
         if instrument.is_drum==False:
             pr = instrument.get_piano_roll(1/sixteen_t)
+            cnt = 0
             for i, ppr in enumerate(pr):
+                # i: notes
+                # j: time stamp
                 for j, nt in enumerate(ppr):
                     if nt>0:
                         notes[j][i%12+1] += 1
-                    else:       # note off
-                        notes[j][0] += 1
+    for i, note in enumerate(notes):
+        if np.count_nonzero(note) == 0:
+            notes[i][0] = 1               
     return notes, sixteen_t
 
+def ace_info(src):
+    des='./result.txt'
+    pyace.simpleace(src, des)
+    f=open(des, 'r')
+    info=(f.read()).split()
+    info=np.array(info).reshape((int(len(info)/3),3))
+    os.remove(des)
+    return info
 
 def ratio_train_data(notes, chords, seg_t):
     note_ratio=[]
@@ -80,7 +93,6 @@ def load_data(notes, chords):
     return notes, chords
 
 def get_tempo(mid):
-    tempo = 500000
     for m in mid:
         if m.is_meta and m.type=='set_tempo':
             tempo = m.tempo
@@ -121,4 +133,3 @@ def chord2index(chordlist):
     for i, chord in enumerate(chordlist):
         chordlist[i]=chordlabel2num[chord]
     return chordlist
-
