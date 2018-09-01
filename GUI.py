@@ -70,6 +70,7 @@ class App(QWidget):
 			else :
 				self.midiRec.saveTrack("default")
 				self.filePath_textbox.setText("Recordings/default.mid")	
+			self.filePath = self.filePath_textbox.text()
 			self.codeK.end()
 			self.NoticeMsgBox("錄音完成，請按下OK後繼續操作"); 
 		self.unlockGUI()
@@ -163,7 +164,7 @@ class App(QWidget):
 	
 	def drumBtn_GUI(self,layout):
 	
-		a = 25; cnt = 0
+		a = 16; cnt = 0
 		grid = QGridLayout(); grid.setVerticalSpacing(11)
 		self.label_selectDrum = QLabel("請選擇鼓組(以16分音符為一單位)：")
 		grid.addWidget(self.label_selectDrum,0,0,1,50)
@@ -178,12 +179,12 @@ class App(QWidget):
 		self.select_comboBox.currentIndexChanged.connect(lambda:self.select_click(self.select_comboBox))	
 		
 		
-		pic = QPixmap("SourceFile/drum.jpg").scaled(QSize(450,100))
+		pic = QPixmap("SourceFile/drum.jpg").scaled(QSize(600,120))
 		self.bgPic = QLabel("123",self);  self.bgPic.setPixmap(pic)	
 		grid.addWidget(self.bgPic,2,0,10,50)
 		for i in range(0,16):
 			if i%4==0:
-				cnt+=1
+				cnt+=3
 			self.hi_het_list_btn.append(QCheckBox("",self));  grid.addWidget(self.hi_het_list_btn[i],2,a+i+cnt,1,1)
 			self.s_drum_list_btn.append(QCheckBox("",self));  grid.addWidget(self.s_drum_list_btn[i],4,a+i+cnt,1,1)
 			self.b_drum_list_btn.append(QCheckBox("",self));  grid.addWidget(self.b_drum_list_btn[i],6,a+i+cnt,1,1)
@@ -257,11 +258,12 @@ class App(QWidget):
 		print("listen click")
 		#self.filePath
 		fs = FluidSynth()
-		#fs.midi_to_audio(self.filePath, 'test_listen.wav')
+		fs.midi_to_audio(self.filePath, 'test_listen.wav')
 		#listen thread
 		fs.play_midi(self.filePath)
 		#QSound.play('test_listen.wav')
 		#os.remove('test.wav')
+
 	
 	#選擇輸入的port
 	def sel_click(self):
@@ -285,21 +287,22 @@ class App(QWidget):
 				print("error midi device")
 				self.errMsgBox("Error midi device")
 			else:
-				print("record set"); self.recording = 1;
+				print("record set"); 
 				
 				#myPort = int(self.portSel.text()); print(myPort)
 				print("myPort : ",self.myPort," ",self.portSel.text())
 				self.codeK = Setup()
 				self.codeK.open_port(self.myPort)			
-				
+
 				if self.NoticeMsgBox("OK後，請隨意按下一個keyboard上的鍵盤") == QMessageBox.Ok: 
-					# 這可以直接利用測試的來寫死(雖然不同樂器on_id不同)
+
 					on_id = self.codeK.get_device_id();  print("on_id : ", on_id)
 					self.midiRec = CK_rec(self.myPort, on_id, debug=True)
 					self.codeK.set_callback(self.midiRec)
-				
-					if self.NoticeMsgBox("準備開始錄音....\n－按下OK即可開始錄製\n－按下ENTER即可停止錄音")== QMessageBox.Ok :
-						self.lockGUI()
+
+					if self.NoticeMsgBox("準備開始錄音....\n－按下OK即可開始錄製\n－按下ENTER即可停止錄音") == QMessageBox.Ok:
+						self.lockGUI()		
+						self.recording = 1;	
 						t = threading.Thread(target = self.record_start); t.start()
 		elif self.recording == 1:
 			self.finishRecording()
@@ -404,7 +407,8 @@ class App(QWidget):
 				self.errMsgBox("No such Midi File !!!")
 		else:
 			self.errMsgBox("Please select a Midi File !!!")
-		
+		os.system('mscore new_song.mid')
+
 	def exit_click(self):
 		self.close()
 	
