@@ -34,6 +34,9 @@ class App(QWidget):
 	b_drum_list_btn = [];
 	recording = 0
 
+	modelName = ["model/model_pop.h5","model/model_Jazz.h5","model/model_classical.h5"]    #到時model的正確位置要打好
+	drumType = 0; ignore_pos = [3,7,8,12]
+
 	def __init__(self):
 		super().__init__()
 		self.initUI()
@@ -58,6 +61,18 @@ class App(QWidget):
 		self.record_button.setText("錄製")
 		
 	
+	def hideDurmBtn(self):
+		for i in self.ignore_pos:
+			self.hi_het_list_btn[i].setVisible(False)
+			self.s_drum_list_btn[i].setVisible(False)
+			self.b_drum_list_btn[i].setVisible(False)
+	
+	def showDurmBtn(self):
+		for i in self.ignore_pos:
+			self.hi_het_list_btn[i].setVisible(True)
+			self.s_drum_list_btn[i].setVisible(True)
+			self.b_drum_list_btn[i].setVisible(True)
+	
 	def finishRecording(self):
 		self.recording = 0;	
 		name, ok = QInputDialog.getText(self, '', 'Save midi recording as?')
@@ -65,10 +80,10 @@ class App(QWidget):
 			print("FILE NAME : ", name)
 			if name != "":
 				self.midiRec.saveTrack(name)
-				self.filePath_textbox.setText("Recordings/" + name + '.mid')
+				self.filePath_textbox.setText("Recordings/rec/" + name + '.mid')
 			else :
 				self.midiRec.saveTrack("default")
-				self.filePath_textbox.setText("Recordings/default.mid")	
+				self.filePath_textbox.setText("Recordings/rec/default.mid")	
 			self.filePath = self.filePath_textbox.text()
 			self.codeK.end()
 			self.NoticeMsgBox("錄音完成，請按下OK後繼續操作"); 
@@ -173,12 +188,14 @@ class App(QWidget):
 		self.select_comboBox = QComboBox(self)
 		grid.addWidget(self.select_comboBox, 1, 0, 1 ,50)
 		self.select_comboBox.addItem("Empty")
-		self.select_comboBox.addItem("Basic 1")
-		self.select_comboBox.addItem("Basic 2")
+		self.select_comboBox.addItem("POP Sample 1")
+		self.select_comboBox.addItem("POP Sample 2")
+		self.select_comboBox.addItem("JAZZ Sample 1")
+		self.select_comboBox.addItem("JAZZ Sample 2")
 		self.select_comboBox.currentIndexChanged.connect(lambda:self.select_click(self.select_comboBox))	
 		
 		
-		pic = QPixmap("SourceFile/drum.jpg").scaled(QSize(600,120))
+		pic = QPixmap("Pic/drum.jpg").scaled(QSize(600,120))
 		self.bgPic = QLabel("123",self);  self.bgPic.setPixmap(pic)	
 		grid.addWidget(self.bgPic,2,0,10,50)
 		for i in range(0,16):
@@ -196,6 +213,19 @@ class App(QWidget):
 		
 		layout.addLayout(grid)
 	
+	def modelSelect_GUI(self,layout):
+		grid = QGridLayout(); grid.setVerticalSpacing(11)
+		self.label_selectStyle = QLabel("請選訓練模板：")
+		grid.addWidget(self.label_selectStyle,0,0,1,50)
+	
+		self.select_Style = QComboBox(self)
+		grid.addWidget(self.select_Style, 1, 0, 1 ,50)
+		self.select_Style.addItem("POP")
+		self.select_Style.addItem("JAZZ")
+		self.select_Style.addItem("CLASSICAL")
+		
+		layout.addLayout(grid)
+	
 	def record_setup(self):
 		currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 		parentdir = os.path.dirname(currentdir)
@@ -206,7 +236,8 @@ class App(QWidget):
 		self.setWindowTitle('自動伴奏產生器')
 
 		grid = QVBoxLayout(); 
-		self.fileOpen_GUI(grid)		
+		self.fileOpen_GUI(grid)	
+		self.modelSelect_GUI(grid)
 		self.drumBtn_GUI(grid)
 		self.excute_GUI(grid)
 		self.setLayout(grid)
@@ -224,6 +255,8 @@ class App(QWidget):
 			self.hi_het_list_btn[i].setCheckState(0)
 			self.s_drum_list_btn[i].setCheckState(0)
 			self.b_drum_list_btn[i].setCheckState(0)
+		self.select_Style.setCurrentIndex(0); 
+		
 		
 	def open_click(self):
 		self.openFileNameDialog()
@@ -231,36 +264,32 @@ class App(QWidget):
 	def openFileNameDialog(self): 
 		options = QFileDialog.Options()
 		options |= QFileDialog.DontUseNativeDialog
-		fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*);;Python Files (*.py)", options=options)
+		fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", ".","All Files (*);;Python Files (*.py)", options=options)
 		if fileName:
 			self.filePath = fileName # print(fileName)	
 
 			
-	# 需要再加(看是MP3 還是MIDI)
+	# MIDI檔案試聽
 	def listen_click(self):
 		print("listen click")
 		#self.filePath
-		fs = FluidSynth()
-		fs.midi_to_audio(self.filePath, 'test_listen.wav')
-		#listen thread
-		#fs.play_midi(self.filePath)
-		QSound.play('test_listen.wav')
-
-#		os.remove('test_listen.wav')
-	
-	#需再測試 - 選擇input的port
-	def sel_click(self):
-            self.codeK = Setup()
-            self.items = self.codeK.get_ports()
-            self.items.append('null') 
-            #self.items.append('0')  #到時需刪除
-            print(self.items)
+		t = threading.Thread(target = self.test_listen); t.start() 
+	def test_listen(self):
+            os.system('fluidsynth --audio-driver=alsa -i /usr/share/soundfonts/FluidR3_GM.sf2 '+ self.filePath)
         
-            item, ok = QInputDialog.getItem(self, "", "List of ports", self.items, 0, False)
-            if ok and item:
-                self.portSel.setText(item)
-                self.myPort = self.items.index(item)
-            del self.items[:]
+	#選擇輸入的port
+	def sel_click(self):
+		self.codeK = Setup()
+		self.items = self.codeK.get_ports()
+		self.items.append('null') 
+		#self.items.append('0')  #到時需刪除
+		print(self.items)
+	
+		item, ok = QInputDialog.getItem(self, "", "List of ports", self.items, 0, False)
+		if ok and item:
+			self.portSel.setText(item)
+			self.myPort = self.items.index(item)
+		del self.items[:]
 		
 	#需再測試		
 	def record_click(self):		
@@ -277,9 +306,8 @@ class App(QWidget):
 				self.codeK = Setup()
 				self.codeK.open_port(self.myPort)			
 
-				
-				if self.NoticeMsgBox("OK後，請隨意按下一個keyboard上的鍵盤") == QMessageBox.Ok:
-					# 這可以直接利用測試的來寫死(雖然不同樂器on_id不同)
+				if self.NoticeMsgBox("OK後，請隨意按下一個keyboard上的鍵盤") == QMessageBox.Ok: 
+
 					on_id = self.codeK.get_device_id();  print("on_id : ", on_id)
 					self.midiRec = CK_rec(self.myPort, on_id, debug=True)
 					self.codeK.set_callback(self.midiRec)
@@ -288,12 +316,8 @@ class App(QWidget):
 						self.lockGUI()		
 						self.recording = 1;	
 						t = threading.Thread(target = self.record_start); t.start()
-				
 		elif self.recording == 1:
 			self.finishRecording()
-		
-			
-	#需再測試
 	def record_start(self):
 		print("record_start")		
 		while self.recording == 1:
@@ -303,11 +327,30 @@ class App(QWidget):
 	
 	def select_click(self,box):   # ComboBox select clicked
 		#print(box.currentIndex())
+		if box.currentIndex()<3:
+			self.drumType = 0;
+			self.showDurmBtn()
+		else:
+			self.drumType = 1;
+			self.hideDurmBtn()
+		
 		tmp = drumSample.get_drumList(box.currentIndex())
-		for i in range(0,16):
-			self.hi_het_list_btn[i].setCheckState(tmp[0][i]) 
-			self.b_drum_list_btn[i].setCheckState(tmp[1][i]) 
-			self.s_drum_list_btn[i].setCheckState(tmp[2][i]) 		
+		if self.drumType == 0:
+			for i in range(0,16):
+				self.hi_het_list_btn[i].setCheckState(tmp[0][i]) 
+				self.b_drum_list_btn[i].setCheckState(tmp[1][i]) 
+				self.s_drum_list_btn[i].setCheckState(tmp[2][i]) 
+		elif self.drumType == 1:
+			cnt = 0
+			for i in range(0,16):
+				if i in self.ignore_pos:
+					continue
+				self.hi_het_list_btn[i].setCheckState(tmp[0][cnt]) 
+				self.b_drum_list_btn[i].setCheckState(tmp[1][cnt]) 
+				self.s_drum_list_btn[i].setCheckState(tmp[2][cnt]) 
+				cnt+=1;
+
+			
 	def typeSet_btn(self,b):	
 		if b.checkState() == 2:
 			b.setCheckState(0)
@@ -318,17 +361,10 @@ class App(QWidget):
 		t = threading.Thread(target = self.DrumOutputSample);	t.start()
 	def DrumOutputSample(self):
 		hi_note = 42;	s_drum_note = 38;	b_drum_note = 36
-		time_delta = 0.15; cnt = 0;
-		
+
 		midiout = rtmidi.MidiOut()
 		available_ports = midiout.get_ports()
 		print(available_ports,midiout)
-        
-		for i in range(0,16):
-			self.hi_het[i] = self.hi_het_list_btn[i].checkState()
-			self.b_drum[i] = self.b_drum_list_btn[i].checkState()
-			self.s_drum[i] = self.s_drum_list_btn[i].checkState()			
-		durm_list = []; durm_list.append(self.hi_het); durm_list.append(self.s_drum);  durm_list.append(self.b_drum);
 
 		if available_ports:
 			midiout.open_port(0)
@@ -337,26 +373,58 @@ class App(QWidget):
 			midiout.open_virtual_port("My virtual output")
 			print('My virtual')
 
-		for i in range(0,2):  # repeat leng times
-			for i in range(0,len(durm_list[0])):	# one section tempo
-				if(durm_list[0][i] or durm_list[1][i] or durm_list[2][i]):	
-					time.sleep(cnt*time_delta)
-					midiout.send_message( Message('note_on', note=hi_note, velocity=durm_list[0][i]*96, channel = 9).bytes() )
-					midiout.send_message( Message('note_on', note=s_drum_note, velocity=durm_list[1][i]*70, channel = 9).bytes() )
-					midiout.send_message( Message('note_on', note=b_drum_note, velocity=durm_list[2][i]*96, channel = 9).bytes() )
-					time.sleep(time_delta)
-					midiout.send_message( Message('note_on', note=hi_note, velocity=0, channel = 9).bytes() )
-					midiout.send_message( Message('note_on', note=s_drum_note, velocity=0, channel = 9).bytes() )
-					midiout.send_message( Message('note_on', note=b_drum_note, velocity=0, channel = 9).bytes() )
-					cnt = 0
-				else:
-					cnt+=1
-		time.sleep(time_delta)
+		for i in range(0,16):
+			self.hi_het[i] = self.hi_het_list_btn[i].checkState()
+			self.b_drum[i] = self.b_drum_list_btn[i].checkState()
+			self.s_drum[i] = self.s_drum_list_btn[i].checkState()			
+		durm_list = []; durm_list.append(self.hi_het); durm_list.append(self.s_drum);  durm_list.append(self.b_drum);
+			
+		if self.drumType == 0:
+			time_delta = 0.15; cnt = 0;
+			for i in range(0,2):  # repeat leng times
+				for i in range(0,16):	# one section tempo
+					if(durm_list[0][i] or durm_list[1][i] or durm_list[2][i]):	
+						time.sleep(cnt*time_delta)
+						midiout.send_message( Message('note_on', note=hi_note, velocity=durm_list[0][i]*96, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=s_drum_note, velocity=durm_list[1][i]*70, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=b_drum_note, velocity=durm_list[2][i]*96, channel = 9).bytes() )
+						time.sleep(time_delta)
+						midiout.send_message( Message('note_on', note=hi_note, velocity=0, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=s_drum_note, velocity=0, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=b_drum_note, velocity=0, channel = 9).bytes() )
+						cnt = 0
+					else:
+						cnt+=1
+						
+			time.sleep(time_delta)
+			
+		elif self.drumType == 1:
+			time_delta = 0.2; cnt = 0;			
+			for i in range(0,2):  # repeat leng times
+				for i in range(0,16):	# one section tempo
+					if (i in self.ignore_pos):
+						continue;				
+					if(durm_list[0][i] or durm_list[1][i] or durm_list[2][i]):	
+						time.sleep(cnt*time_delta)
+						midiout.send_message( Message('note_on', note=hi_note, velocity=durm_list[0][i]*96, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=s_drum_note, velocity=durm_list[1][i]*70, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=b_drum_note, velocity=durm_list[2][i]*96, channel = 9).bytes() )
+						time.sleep(time_delta)
+						midiout.send_message( Message('note_on', note=hi_note, velocity=0, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=s_drum_note, velocity=0, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=b_drum_note, velocity=0, channel = 9).bytes() )
+						cnt = 0
+					else:
+						cnt+=1
+			time.sleep(time_delta)
+		
 		self.listen_button.setDisabled(False)
 		del midiout
 		
-
+		
+	
 	def run_click(self):
+		#print(model)
 		if self.filePath == "":
 			self.filePath =  self.filePath_textbox.text() 
 		else:
@@ -374,38 +442,47 @@ class App(QWidget):
 				drumlist.append(self.hi_het); drumlist.append(self.s_drum);  drumlist.append(self.b_drum);
 				
 				# 整理midi樂譜
-				os.system('mscore ' + self.filePath + ' -o ' + 'Recordings/clean/cleanMidi.mid')
-				sectionNum = sectionNumber.secNum('Recordings/clean/cleanMidi.mid')
-                
+				os.system('mscore ' + self.filePath + ' -o ' + 'Recordings/cleanMidi.mid')
+				sectionNum = sectionNumber.secNum('Recordings/cleanMidi.mid')
+				
+				outpath = self.save_output()
+				outpath = outpath 
 				# 其他伴奏加入
-				popoSong = midiscore.song('Recordings/clean/cleanMidi.mid')              		
-				popoChord = popoSong.chord_estimation('model/model_single_Jazz.h5')
+				popoSong = midiscore.song('Recordings/cleanMidi.mid')              		
+				popoChord = popoSong.chord_estimation(self.modelName[self.select_Style.currentIndex()])     #此處可能要修改
 				popoSong.add_accompaniant(popoChord, 35)    # bass
 				popoSong.add_accompaniant(popoChord, 5)     # piano
 				
+
 				# 輸出鼓組
-				drumGenerate.OutputMidi("SourceFile/mymidi.mid", drumlist, sectionNum)
+				drumGenerate.OutputMidi(outpath, "mymidi.mid", drumlist, sectionNum,self.drumType)
+				os.remove("mymidi.mid")
 				
-				self.NoticeMsgBox("Your Output MidiFile is done ~")
+				self.NoticeMsgBox("Your File has been saved to **output/" + os.path.basename(outpath)+ "**")
 				self.reset_click()
+				os.system('mscore ' + outpath)
 			else:
 				self.errMsgBox("No such Midi File !!!")
 		else:
 			self.errMsgBox("Please select a Midi File !!!")
-		os.system('mscore new_song.mid')
 
+	def save_output(self): 
+		options = QFileDialog.Options()
+		options |= QFileDialog.DontUseNativeDialog
+		fileName, _ = QFileDialog.getSaveFileName(self, "save output", "output/", "midi (*.mid)")
+		if fileName:  return fileName        
 	def exit_click(self):
 		self.close()
 	
 	def NoticeMsgBox(self,msg):
-		msgBox = QMessageBox();	msgBox.move(150,150)
+		msgBox = QMessageBox();	#msgBox.move(150,150)
 		msgBox.setIcon(QMessageBox.Information); msgBox.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
 		msgBox.setText(msg);
 		return msgBox.exec_()
 
 	def errMsgBox(self,msg):
 		self.filePath = '';	self.filePath_textbox.setText(self.filePath)
-		msgBox = QMessageBox();	msgBox.move(150,150)
+		msgBox = QMessageBox();	#msgBox.move(150,150)
 		msgBox.setIcon(QMessageBox.Critical); msgBox.setStandardButtons(QMessageBox.Ok)
 		msgBox.setText(msg); 
 		return msgBox.exec_(); 

@@ -1,7 +1,21 @@
 import math
-from mido import Message, MidiFile, MidiTrack ,MetaMessage
+import numpy as np
+from mido import Message, MidiFile, MidiTrack ,MetaMessage, tempo2bpm
+import pretty_midi
+from SourceCode.func import get_tempo
 
 
+def secNum(path):
+    midd=MidiFile(path)
+    midp=pretty_midi.PrettyMIDI(path)
+    tempo=get_tempo(midd)
+    bpm=tempo2bpm(tempo)
+    measure_t=(1/(bpm/60))*4
+    midi_sec=int(np.ceil(midd.length/measure_t))
+
+    return midi_sec
+
+"""
 def secNum(path):
 	# read midi
 	mid = MidiFile(path)
@@ -25,4 +39,4 @@ def secNum(path):
 	cnt /= resolution;
 
 	return math.ceil(cnt/8)  # section數
- 
+ """

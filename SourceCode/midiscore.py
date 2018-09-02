@@ -113,9 +113,9 @@ class song():
         for msg in msgs:
             accTrack.append(msg)
 
-        myMidi.save('./SourceFile/mymidi.mid')
-        self.track=mido.MidiFile('./SourceFile/mymidi.mid')
-        self._update_trackinfo('./SourceFile/mymidi.mid')
+        myMidi.save('mymidi.mid')
+        self.track=mido.MidiFile('mymidi.mid')
+        self._update_trackinfo('mymidi.mid')
         #os.remove('resources/mymidi.mid')
         print('adding '+str(instrument)+' in type '+str(type)+' success')
 
