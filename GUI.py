@@ -263,7 +263,7 @@ class App(QWidget):
 	def openFileNameDialog(self): 
 		options = QFileDialog.Options()
 		options |= QFileDialog.DontUseNativeDialog
-		fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*);;Python Files (*.py)", options=options)
+		fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", ".","All Files (*);;Python Files (*.py)", options=options)
 		if fileName:
 			self.filePath = fileName # print(fileName)	
 
@@ -443,26 +443,33 @@ class App(QWidget):
 				# 整理midi樂譜
 				os.system('mscore ' + self.filePath + ' -o ' + 'Recordings/cleanMidi.mid')
 				sectionNum = sectionNumber.secNum('Recordings/cleanMidi.mid')
-                
+				
+				outpath = self.save_output()
+				outpath = outpath + ".mid"
 				# 其他伴奏加入
 				popoSong = midiscore.song('Recordings/cleanMidi.mid')              		
 				popoChord = popoSong.chord_estimation(self.modelName[self.select_Style.currentIndex()])     #此處可能要修改
 				popoSong.add_accompaniant(popoChord, 35)    # bass
 				popoSong.add_accompaniant(popoChord, 5)     # piano
 				
+
 				# 輸出鼓組
-				drumGenerate.OutputMidi("mymidi.mid", drumlist, sectionNum,self.drumType)
+				drumGenerate.OutputMidi(outpath, "mymidi.mid", drumlist, sectionNum,self.drumType)
 				os.remove("mymidi.mid")
 				
-				self.NoticeMsgBox("Your Output MidiFile is done ~")
+				self.NoticeMsgBox("Your File has been saved to **output/" + os.path.basename(outpath)+ "**")
 				self.reset_click()
-				os.system('mscore new_song.mid')
+				os.system('mscore ' + outpath)
 			else:
 				self.errMsgBox("No such Midi File !!!")
 		else:
 			self.errMsgBox("Please select a Midi File !!!")
 
-
+	def save_output(self): 
+		options = QFileDialog.Options()
+		options |= QFileDialog.DontUseNativeDialog
+		fileName, _ = QFileDialog.getSaveFileName(self, "save output", "output/", "midi (*.mid)")
+		if fileName:  return fileName        
 	def exit_click(self):
 		self.close()
 	

@@ -3,7 +3,7 @@ import math
 from mido import Message, MidiFile, MidiTrack ,MetaMessage
 
 
-def OutputMidi(path, durm_list,secNum,type):	
+def OutputMidi(outpath, path, durm_list,secNum,type):	
 
 	hi_note = 42
 	s_drum_note = 38
@@ -98,5 +98,4 @@ def OutputMidi(path, durm_list,secNum,type):
 			
 	'''
 	mid.tracks.append(new_track)
-	
-	mid.save('new_song.mid')
+	mid.save(outpath)
