@@ -379,7 +379,7 @@ class App(QWidget):
                 
 				# 其他伴奏加入
 				popoSong = midiscore.song('Recordings/clean/cleanMidi.mid')              		
-				popoChord = popoSong.chord_estimation('model/model_single_pop.h5')
+				popoChord = popoSong.chord_estimation('model/model_single_Jazz.h5')
 				popoSong.add_accompaniant(popoChord, 35)    # bass
 				popoSong.add_accompaniant(popoChord, 5)     # piano
 				
