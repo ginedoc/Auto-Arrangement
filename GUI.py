@@ -19,7 +19,7 @@ from SourceCode.rec_classes import CK_rec
 
 import SourceCode.drumSample as drumSample
 import SourceCode.drumGenerate as drumGenerate
-import SourceCode.midiscore as midiscore
+#import SourceCode.midiscore as midiscore
 import SourceCode.sectionNumber as sectionNumber
 
 
@@ -34,7 +34,8 @@ class App(QWidget):
 	b_drum_list_btn = [];
 	recording = 0
 	modelName = ["1.pop","2.jazz","3.classical"]    #到時model的正確位置要打好
-
+	drumType = 0; ignore_pos = [3,7,8,12]
+	
 	def __init__(self):
 		super().__init__()
 		self.initUI()
@@ -58,6 +59,18 @@ class App(QWidget):
 			self.b_drum_list_btn[i].setDisabled(False)
 		self.record_button.setText("錄製")
 		
+	
+	def hideDurmBtn(self):
+		for i in self.ignore_pos:
+			self.hi_het_list_btn[i].setVisible(False)
+			self.s_drum_list_btn[i].setVisible(False)
+			self.b_drum_list_btn[i].setVisible(False)
+	
+	def showDurmBtn(self):
+		for i in self.ignore_pos:
+			self.hi_het_list_btn[i].setVisible(True)
+			self.s_drum_list_btn[i].setVisible(True)
+			self.b_drum_list_btn[i].setVisible(True)
 	
 	def finishRecording(self):
 		self.recording = 0;	
@@ -174,8 +187,9 @@ class App(QWidget):
 		self.select_comboBox = QComboBox(self)
 		grid.addWidget(self.select_comboBox, 1, 0, 1 ,50)
 		self.select_comboBox.addItem("Empty")
-		self.select_comboBox.addItem("Basic 1")
-		self.select_comboBox.addItem("Basic 2")
+		self.select_comboBox.addItem("POP Sample 1")
+		self.select_comboBox.addItem("POP Sample 2")
+		self.select_comboBox.addItem("JAZZ Sample 2")
 		self.select_comboBox.currentIndexChanged.connect(lambda:self.select_click(self.select_comboBox))	
 		
 		
@@ -315,11 +329,30 @@ class App(QWidget):
 	
 	def select_click(self,box):   # ComboBox select clicked
 		#print(box.currentIndex())
+		if box.currentIndex()<3:
+			self.drumType = 0;
+			self.showDurmBtn()
+		else:
+			self.drumType = 1;
+			self.hideDurmBtn()
+		
 		tmp = drumSample.get_drumList(box.currentIndex())
-		for i in range(0,16):
-			self.hi_het_list_btn[i].setCheckState(tmp[0][i]) 
-			self.b_drum_list_btn[i].setCheckState(tmp[1][i]) 
-			self.s_drum_list_btn[i].setCheckState(tmp[2][i]) 		
+		if self.drumType == 0:
+			for i in range(0,16):
+				self.hi_het_list_btn[i].setCheckState(tmp[0][i]) 
+				self.b_drum_list_btn[i].setCheckState(tmp[1][i]) 
+				self.s_drum_list_btn[i].setCheckState(tmp[2][i]) 
+		elif self.drumType == 1:
+			cnt = 0
+			for i in range(0,16):
+				if i in self.ignore_pos:
+					continue
+				self.hi_het_list_btn[i].setCheckState(tmp[0][cnt]) 
+				self.b_drum_list_btn[i].setCheckState(tmp[1][cnt]) 
+				self.s_drum_list_btn[i].setCheckState(tmp[2][cnt]) 
+				cnt+=1;
+
+			
 	def typeSet_btn(self,b):	
 		if b.checkState() == 2:
 			b.setCheckState(0)
@@ -330,17 +363,10 @@ class App(QWidget):
 		t = threading.Thread(target = self.DrumOutputSample);	t.start()
 	def DrumOutputSample(self):
 		hi_note = 42;	s_drum_note = 38;	b_drum_note = 36
-		time_delta = 0.15; cnt = 0;
-		
+
 		midiout = rtmidi.MidiOut()
 		available_ports = midiout.get_ports()
 		print(available_ports,midiout)
-        
-		for i in range(0,16):
-			self.hi_het[i] = self.hi_het_list_btn[i].checkState()
-			self.b_drum[i] = self.b_drum_list_btn[i].checkState()
-			self.s_drum[i] = self.s_drum_list_btn[i].checkState()			
-		durm_list = []; durm_list.append(self.hi_het); durm_list.append(self.s_drum);  durm_list.append(self.b_drum);
 
 		if available_ports:
 			midiout.open_port(0)
@@ -349,21 +375,51 @@ class App(QWidget):
 			midiout.open_virtual_port("My virtual output")
 			print('My virtual')
 
-		for i in range(0,2):  # repeat leng times
-			for i in range(0,len(durm_list[0])):	# one section tempo
-				if(durm_list[0][i] or durm_list[1][i] or durm_list[2][i]):	
-					time.sleep(cnt*time_delta)
-					midiout.send_message( Message('note_on', note=hi_note, velocity=durm_list[0][i]*96, channel = 9).bytes() )
-					midiout.send_message( Message('note_on', note=s_drum_note, velocity=durm_list[1][i]*70, channel = 9).bytes() )
-					midiout.send_message( Message('note_on', note=b_drum_note, velocity=durm_list[2][i]*96, channel = 9).bytes() )
-					time.sleep(time_delta)
-					midiout.send_message( Message('note_on', note=hi_note, velocity=0, channel = 9).bytes() )
-					midiout.send_message( Message('note_on', note=s_drum_note, velocity=0, channel = 9).bytes() )
-					midiout.send_message( Message('note_on', note=b_drum_note, velocity=0, channel = 9).bytes() )
-					cnt = 0
-				else:
-					cnt+=1
-		time.sleep(time_delta)
+		for i in range(0,16):
+			self.hi_het[i] = self.hi_het_list_btn[i].checkState()
+			self.b_drum[i] = self.b_drum_list_btn[i].checkState()
+			self.s_drum[i] = self.s_drum_list_btn[i].checkState()			
+		durm_list = []; durm_list.append(self.hi_het); durm_list.append(self.s_drum);  durm_list.append(self.b_drum);
+			
+		if self.drumType == 0:
+			time_delta = 0.15; cnt = 0;
+			for i in range(0,2):  # repeat leng times
+				for i in range(0,16):	# one section tempo
+					if(durm_list[0][i] or durm_list[1][i] or durm_list[2][i]):	
+						time.sleep(cnt*time_delta)
+						midiout.send_message( Message('note_on', note=hi_note, velocity=durm_list[0][i]*96, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=s_drum_note, velocity=durm_list[1][i]*70, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=b_drum_note, velocity=durm_list[2][i]*96, channel = 9).bytes() )
+						time.sleep(time_delta)
+						midiout.send_message( Message('note_on', note=hi_note, velocity=0, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=s_drum_note, velocity=0, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=b_drum_note, velocity=0, channel = 9).bytes() )
+						cnt = 0
+					else:
+						cnt+=1
+						
+			time.sleep(time_delta)
+			
+		elif self.drumType == 1:
+			time_delta = 0.2; cnt = 0;			
+			for i in range(0,2):  # repeat leng times
+				for i in range(0,16):	# one section tempo
+					if (i in self.ignore_pos):
+						continue;				
+					if(durm_list[0][i] or durm_list[1][i] or durm_list[2][i]):	
+						time.sleep(cnt*time_delta)
+						midiout.send_message( Message('note_on', note=hi_note, velocity=durm_list[0][i]*96, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=s_drum_note, velocity=durm_list[1][i]*70, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=b_drum_note, velocity=durm_list[2][i]*96, channel = 9).bytes() )
+						time.sleep(time_delta)
+						midiout.send_message( Message('note_on', note=hi_note, velocity=0, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=s_drum_note, velocity=0, channel = 9).bytes() )
+						midiout.send_message( Message('note_on', note=b_drum_note, velocity=0, channel = 9).bytes() )
+						cnt = 0
+					else:
+						cnt+=1
+			time.sleep(time_delta)
+		
 		self.listen_button.setDisabled(False)
 		del midiout
 		
@@ -386,20 +442,24 @@ class App(QWidget):
 					self.s_drum[i] = self.s_drum_list_btn[i].checkState()
 				drumlist = []; 
 				drumlist.append(self.hi_het); drumlist.append(self.s_drum);  drumlist.append(self.b_drum);
-				
+				'''
 				# 整理midi樂譜
 				os.system('mscore ' + self.filePath + ' -o ' + 'Recordings/clean/cleanMidi.mid')
 				sectionNum = sectionNumber.secNum('Recordings/clean/cleanMidi.mid')
                 
 				# 其他伴奏加入
-				#model = "model/"+self.modelName[self.select_Style.currentIndex()]
 				popoSong = midiscore.song('Recordings/clean/cleanMidi.mid')              		
 				popoChord = popoSong.chord_estimation(self.modelName[self.select_Style.currentIndex()])     #此處可能要修改
 				popoSong.add_accompaniant(popoChord, 35)    # bass
 				popoSong.add_accompaniant(popoChord, 5)     # piano
 				
 				# 輸出鼓組
-				drumGenerate.OutputMidi("SourceFile/mymidi.mid", drumlist, sectionNum)
+				drumGenerate.OutputMidi("SourceFile/mymidi.mid", drumlist, sectionNum,self.drumType)
+				'''
+				
+				sectionNum = sectionNumber.secNum(self.filePath) #之後要刪除
+				drumGenerate.OutputMidi(self.filePath, drumlist, sectionNum, self.drumType)
+				
 				
 				self.NoticeMsgBox("Your Output MidiFile is done ~")
 				self.reset_click()
@@ -413,14 +473,14 @@ class App(QWidget):
 		self.close()
 	
 	def NoticeMsgBox(self,msg):
-		msgBox = QMessageBox();	msgBox.move(150,150)
+		msgBox = QMessageBox();	#msgBox.move(150,150)
 		msgBox.setIcon(QMessageBox.Information); msgBox.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
 		msgBox.setText(msg);
 		return msgBox.exec_()
 
 	def errMsgBox(self,msg):
 		self.filePath = '';	self.filePath_textbox.setText(self.filePath)
-		msgBox = QMessageBox();	msgBox.move(150,150)
+		msgBox = QMessageBox();	#msgBox.move(150,150)
 		msgBox.setIcon(QMessageBox.Critical); msgBox.setStandardButtons(QMessageBox.Ok)
 		msgBox.setText(msg); 
 		return msgBox.exec_(); 
