@@ -199,7 +199,7 @@ class App(QWidget):
 	
 	def modelSelect_GUI(self,layout):
 		grid = QGridLayout(); grid.setVerticalSpacing(11)
-		self.label_selectStyle = QLabel("請選擇輸出曲風：")
+		self.label_selectStyle = QLabel("請選訓練模板：")
 		grid.addWidget(self.label_selectStyle,0,0,1,50)
 	
 		self.select_Style = QComboBox(self)
