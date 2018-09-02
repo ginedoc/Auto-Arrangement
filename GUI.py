@@ -34,7 +34,7 @@ class App(QWidget):
 	b_drum_list_btn = [];
 	recording = 0
 
-	modelName = ["model/model_single_pop.h5","model/model_single_Jazz.h5","model/model_single_classical.h5"]    #到時model的正確位置要打好
+	modelName = ["model/model_pop.h5","model/model_Jazz.h5","model/model_classical.h5"]    #到時model的正確位置要打好
 	drumType = 0; ignore_pos = [3,7,8,12]
 
 	def __init__(self):
@@ -80,10 +80,10 @@ class App(QWidget):
 			print("FILE NAME : ", name)
 			if name != "":
 				self.midiRec.saveTrack(name)
-				self.filePath_textbox.setText("Recordings/" + name + '.mid')
+				self.filePath_textbox.setText("Recordings/rec/" + name + '.mid')
 			else :
 				self.midiRec.saveTrack("default")
-				self.filePath_textbox.setText("Recordings/default.mid")	
+				self.filePath_textbox.setText("Recordings/rec/default.mid")	
 			self.filePath = self.filePath_textbox.text()
 			self.codeK.end()
 			self.NoticeMsgBox("錄音完成，請按下OK後繼續操作"); 
@@ -194,7 +194,7 @@ class App(QWidget):
 		self.select_comboBox.currentIndexChanged.connect(lambda:self.select_click(self.select_comboBox))	
 		
 		
-		pic = QPixmap("SourceFile/drum.jpg").scaled(QSize(600,120))
+		pic = QPixmap("Pic/drum.jpg").scaled(QSize(600,120))
 		self.bgPic = QLabel("123",self);  self.bgPic.setPixmap(pic)	
 		grid.addWidget(self.bgPic,2,0,10,50)
 		for i in range(0,16):
@@ -441,22 +441,18 @@ class App(QWidget):
 				drumlist.append(self.hi_het); drumlist.append(self.s_drum);  drumlist.append(self.b_drum);
 				
 				# 整理midi樂譜
-				os.system('mscore ' + self.filePath + ' -o ' + 'Recordings/clean/cleanMidi.mid')
-				sectionNum = sectionNumber.secNum('Recordings/clean/cleanMidi.mid')
+				os.system('mscore ' + self.filePath + ' -o ' + 'Recordings/cleanMidi.mid')
+				sectionNum = sectionNumber.secNum('Recordings/cleanMidi.mid')
                 
 				# 其他伴奏加入
-				popoSong = midiscore.song('Recordings/clean/cleanMidi.mid')              		
+				popoSong = midiscore.song('Recordings/cleanMidi.mid')              		
 				popoChord = popoSong.chord_estimation(self.modelName[self.select_Style.currentIndex()])     #此處可能要修改
 				popoSong.add_accompaniant(popoChord, 35)    # bass
 				popoSong.add_accompaniant(popoChord, 5)     # piano
 				
 				# 輸出鼓組
-				drumGenerate.OutputMidi("SourceFile/mymidi.mid", drumlist, sectionNum,self.drumType)
-				
-				'''
-				sectionNum = sectionNumber.secNum(self.filePath) #之後要刪除
-				drumGenerate.OutputMidi(self.filePath, drumlist, sectionNum, self.drumType)
-				'''
+				drumGenerate.OutputMidi("mymidi.mid", drumlist, sectionNum,self.drumType)
+				os.remove("mymidi.mid")
 				
 				self.NoticeMsgBox("Your Output MidiFile is done ~")
 				self.reset_click()
