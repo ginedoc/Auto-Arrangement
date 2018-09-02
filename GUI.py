@@ -19,7 +19,7 @@ from SourceCode.rec_classes import CK_rec
 
 import SourceCode.drumSample as drumSample
 import SourceCode.drumGenerate as drumGenerate
-#import SourceCode.midiscore as midiscore
+import SourceCode.midiscore as midiscore
 import SourceCode.sectionNumber as sectionNumber
 
 
@@ -33,9 +33,10 @@ class App(QWidget):
 	s_drum_list_btn = []; 
 	b_drum_list_btn = [];
 	recording = 0
-	modelName = ["1.pop","2.jazz","3.classical"]    #到時model的正確位置要打好
+
+	modelName = ["model/model_single_pop.h5","model/model_single_Jazz.h5","model/model_single_classical.h5"]    #到時model的正確位置要打好
 	drumType = 0; ignore_pos = [3,7,8,12]
-	
+
 	def __init__(self):
 		super().__init__()
 		self.initUI()
@@ -213,7 +214,7 @@ class App(QWidget):
 	
 	def modelSelect_GUI(self,layout):
 		grid = QGridLayout(); grid.setVerticalSpacing(11)
-		self.label_selectStyle = QLabel("請選擇輸出曲風：")
+		self.label_selectStyle = QLabel("請選訓練模板：")
 		grid.addWidget(self.label_selectStyle,0,0,1,50)
 	
 		self.select_Style = QComboBox(self)
@@ -271,14 +272,10 @@ class App(QWidget):
 	def listen_click(self):
 		print("listen click")
 		#self.filePath
-		fs = FluidSynth()
-		fs.midi_to_audio(self.filePath, 'test_listen.wav')
-		#listen thread
-		fs.play_midi(self.filePath)
-		#QSound.play('test_listen.wav')
-		#os.remove('test.wav')
-
-	
+		t = threading.Thread(target = self.test_listen); t.start() 
+	def test_listen(self):
+            os.system('fluidsynth --audio-driver=alsa -i /usr/share/soundfonts/FluidR3_GM.sf2 '+ self.filePath)
+        
 	#選擇輸入的port
 	def sel_click(self):
 		self.codeK = Setup()
@@ -442,7 +439,7 @@ class App(QWidget):
 					self.s_drum[i] = self.s_drum_list_btn[i].checkState()
 				drumlist = []; 
 				drumlist.append(self.hi_het); drumlist.append(self.s_drum);  drumlist.append(self.b_drum);
-				'''
+				
 				# 整理midi樂譜
 				os.system('mscore ' + self.filePath + ' -o ' + 'Recordings/clean/cleanMidi.mid')
 				sectionNum = sectionNumber.secNum('Recordings/clean/cleanMidi.mid')
@@ -455,19 +452,20 @@ class App(QWidget):
 				
 				# 輸出鼓組
 				drumGenerate.OutputMidi("SourceFile/mymidi.mid", drumlist, sectionNum,self.drumType)
-				'''
 				
+				'''
 				sectionNum = sectionNumber.secNum(self.filePath) #之後要刪除
 				drumGenerate.OutputMidi(self.filePath, drumlist, sectionNum, self.drumType)
-				
+				'''
 				
 				self.NoticeMsgBox("Your Output MidiFile is done ~")
 				self.reset_click()
+				os.system('mscore new_song.mid')
 			else:
 				self.errMsgBox("No such Midi File !!!")
 		else:
 			self.errMsgBox("Please select a Midi File !!!")
-		os.system('mscore new_song.mid')
+
 
 	def exit_click(self):
 		self.close()
