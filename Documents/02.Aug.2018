@@ -1,6 +1,0 @@
-# 
-1. mid->mp3
-	* resolution
-2. mp3 ->(pyace) ->chord
-3. time domain->ticks domain(1/16 resolution)
-4. [1 1 1 1 1 1 1 12 12 12 12 10 10 10 10 3 3 3 ... ]
