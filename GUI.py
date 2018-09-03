@@ -333,23 +333,27 @@ class App(QWidget):
 		else:
 			self.drumType = 1;
 			self.hideDurmBtn()
+		print(self.drumType)
 		
 		tmp = drumSample.get_drumList(box.currentIndex())
+		print(tmp)
 		if self.drumType == 0:
 			for i in range(0,16):
-				self.hi_het_list_btn[i].setCheckState(tmp[0][i]) 
-				self.b_drum_list_btn[i].setCheckState(tmp[1][i]) 
-				self.s_drum_list_btn[i].setCheckState(tmp[2][i]) 
+				self.hi_het_list_btn[i].setCheckState(tmp[0][i])
+				self.s_drum_list_btn[i].setCheckState(tmp[1][i])
+				self.b_drum_list_btn[i].setCheckState(tmp[2][i]) 
 		elif self.drumType == 1:
 			cnt = 0
 			for i in range(0,16):
 				if i in self.ignore_pos:
-					continue
-				self.hi_het_list_btn[i].setCheckState(tmp[0][cnt]) 
-				self.b_drum_list_btn[i].setCheckState(tmp[1][cnt]) 
-				self.s_drum_list_btn[i].setCheckState(tmp[2][cnt]) 
-				cnt+=1;
-
+					self.hi_het_list_btn[i].setCheckState(0) 
+					self.s_drum_list_btn[i].setCheckState(0) 
+					self.b_drum_list_btn[i].setCheckState(0) 
+				else:
+					self.hi_het_list_btn[i].setCheckState(tmp[0][cnt]) 
+					self.s_drum_list_btn[i].setCheckState(tmp[1][cnt])
+					self.b_drum_list_btn[i].setCheckState(tmp[2][cnt])
+					cnt+=1;
 			
 	def typeSet_btn(self,b):	
 		if b.checkState() == 2:
