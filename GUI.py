@@ -304,15 +304,14 @@ class App(QWidget):
 				#myPort = int(self.portSel.text()); print(myPort)
 				print("myPort : ",self.myPort," ",self.portSel.text())
 				self.codeK = Setup()
-				self.codeK.open_port(self.myPort)			
-
+				self.codeK.open_port(self.myPort)	
+				
+				
 				if self.NoticeMsgBox("OK後，請隨意按下一個keyboard上的鍵盤") == QMessageBox.Ok: 
-
-					on_id = self.codeK.get_device_id();  print("on_id : ", on_id)
-					self.midiRec = CK_rec(self.myPort, on_id, debug=True)
-					self.codeK.set_callback(self.midiRec)
-
+					on_id = self.codeK.get_device_id();  print("on_id : ", on_id) 
 					if self.NoticeMsgBox("準備開始錄音....\n－按下OK即可開始錄製\n－按下ENTER即可停止錄音") == QMessageBox.Ok:
+						self.midiRec = CK_rec(self.myPort, on_id, debug=True)
+						self.codeK.set_callback(self.midiRec)
 						self.lockGUI()		
 						self.recording = 1;	
 						t = threading.Thread(target = self.record_start); t.start()
