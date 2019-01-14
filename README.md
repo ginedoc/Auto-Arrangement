@@ -1,5 +1,8 @@
 # Auto Arrangement
 
+# execute
+python3 GUI.py
+
 ## progress
 ### [02.Aug.2018~14.Aug.2018]
 * [[run]]
